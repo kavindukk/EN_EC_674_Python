@@ -95,20 +95,42 @@ class spacecraft_viewer():
             Define the points on the aircraft following diagram in Figure C.3
         """
         #points are in NED coordinates
-        points = np.array([[1, 1, 0],  # point 1
-                           [1, -1, 0],  # point 2
-                           [-1, -1, 0],  # point 3
-                           [-1, 1, 0],  # point 4
-                           [1, 1, -2],  # point 5
-                           [1, -1, -2],  # point 6
-                           [-1, -1, -2],  # point 7
-                           [-1, 1, -2],  # point 8
-                           [1.5, 1.5, 0],  # point 9
-                           [1.5, -1.5, 0],  # point 10
-                           [-1.5, -1.5, 0],  # point 11
-                           [-1.5, 1.5, 0],  # point 12
+        # points = np.array([[1, 1, 0],  # point 1
+        #                    [1, -1, 0],  # point 2
+        #                    [-1, -1, 0],  # point 3
+        #                    [-1, 1, 0],  # point 4
+        #                    [1, 1, -2],  # point 5
+        #                    [1, -1, -2],  # point 6
+        #                    [-1, -1, -2],  # point 7
+        #                    [-1, 1, -2],  # point 8
+        #                    [1.5, 1.5, 0],  # point 9
+        #                    [1.5, -1.5, 0],  # point 10
+        #                    [-1.5, -1.5, 0],  # point 11
+        #                    [-1.5, 1.5, 0],  # point 12
+        #                   ]).T
+        # scale points for better rendering
+
+        #points are in NED coordinates
+        points = np.array([
+                           [ 3.5, 0.0, 0.0], #p1
+                           [ 2.0,-1.0, 0.2], #p2
+                           [ 2.0, 1.0, 0.2], #p3
+                           [ 2.0, 1.0,-0.2], #p4
+                           [ 2.0,-1.0,-0.2], #p5
+                           [-5.0, 0.0, 0.0], #p6
+                           [ 1.0,-3.0, 0.0], #p7
+                           [-1.0,-3.0, 0.0], #p8
+                           [-1.0, 3.0, 0.0], #p9
+                           [ 1.0, 3.0, 0.0], #p10
+                           [-4.0,-1.5, 0.0], #p11
+                           [-5.0,-1.5, 0.0], #p12
+                           [-5.0, 1.5, 0.0], #p13
+                           [-4.0, 1.5, 0.0], #p14
+                           [-3.0, 0.0, 0.0], #p15
+                           [-5.0, 0.0,-3.0], #p16
                           ]).T
         # scale points for better rendering
+
         scale = 10
         points = scale * points
 
@@ -117,19 +139,20 @@ class spacecraft_viewer():
         green = np.array([0., 1., 0., 1])
         blue = np.array([0., 0., 1., 1])
         yellow = np.array([1., 1., 0., 1])
-        meshColors = np.empty((12, 3, 4), dtype=np.float32)
-        meshColors[0] = yellow  # front
-        meshColors[1] = yellow  # front
+        meshColors = np.empty((13, 3, 4), dtype=np.float32)
+        meshColors[0] = blue  # front
+        meshColors[1] = blue  # front
         meshColors[2] = blue  # back
         meshColors[3] = blue  # back
         meshColors[4] = blue  # right
         meshColors[5] = blue  # right
         meshColors[6] = blue  # left
         meshColors[7] = blue  # left
-        meshColors[8] = blue  # top
-        meshColors[9] = blue  # top
+        meshColors[8] = red  # top
+        meshColors[9] = green  # top
         meshColors[10] = green  # bottom
         meshColors[11] = green  # bottom
+        meshColors[12] = green
         return points, meshColors
 
     def _points_to_mesh(self, points):
@@ -139,19 +162,36 @@ class spacecraft_viewer():
           (a rectangle requires two triangular mesh faces)
         """
         points=points.T
-        mesh = np.array([[points[0], points[1], points[5]],  # front
-                         [points[0], points[4], points[5]],  # front
-                         [points[3], points[2], points[6]],  # back
-                         [points[3], points[7], points[6]],  # back
-                         [points[3], points[0], points[4]],  # right
-                         [points[3], points[7], points[4]],  # right
-                         [points[2], points[1], points[5]],  # left
-                         [points[2], points[6], points[5]],  # left
-                         [points[7], points[4], points[5]],  # top
-                         [points[7], points[6], points[5]],  # top
-                         [points[11], points[8], points[9]],  # bottom
-                         [points[11], points[10], points[9]],  # bottom
+        # mesh = np.array([[points[0], points[1], points[5]],  # front
+        #                  [points[0], points[4], points[5]],  # front
+        #                  [points[3], points[2], points[6]],  # back
+        #                  [points[3], points[7], points[6]],  # back
+        #                  [points[3], points[0], points[4]],  # right
+        #                  [points[3], points[7], points[4]],  # right
+        #                  [points[2], points[1], points[5]],  # left
+        #                  [points[2], points[6], points[5]],  # left
+        #                  [points[7], points[4], points[5]],  # top
+        #                  [points[7], points[6], points[5]],  # top
+        #                  [points[11], points[8], points[9]],  # bottom
+        #                  [points[11], points[10], points[9]],  # bottom
+        #                  ])
+
+        mesh = np.array([[points[0], points[1], points[2]],  # front
+                         [points[0], points[3], points[2]],  # front
+                         [points[0], points[4], points[3]],  # back
+                         [points[0], points[4], points[1]],  # back
+                         [points[1], points[2], points[5]],  # right
+                         [points[2], points[5], points[3]],  # right
+                         [points[3], points[4], points[5]],  # left
+                         [points[1], points[4], points[5]],  # left
+                         [points[5], points[14], points[15]],  # top
+                         [points[6], points[7], points[8]],  # top
+                         [points[6], points[9], points[8]],  # bottom
+                         [points[10], points[11], points[12]],  # bottom
+                         [points[10], points[13], points[12]], # bottom                         
                          ])
+
+
         return mesh
 
     def _Euler2Rotation(self, phi, theta, psi):

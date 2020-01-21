@@ -16,6 +16,8 @@ import numpy as np
 # load message types
 from message_types.msg_state import msg_state
 
+from chap3.equations import equations
+
 import parameters.aerosonde_parameters as MAV
 from tools.tools import Quaternion2Euler
 
@@ -25,8 +27,8 @@ class mav_dynamics:
         # set initial states based on parameter file
         # _state is the 13x1 internal state of the aircraft that is being propagated:
         # _state = [pn, pe, pd, u, v, w, e0, e1, e2, e3, p, q, r]
-        self._state = np.array([
-                                ])
+        self._state = np.array([[ MAV.pn0, MAV.pe0, MAV.pd0, MAV.u0, MAV.v0, MAV.w0, MAV.e0, MAV.e1, MAV.e2, MAV.e3, MAV.p0, MAV.q0, MAV.r0
+                                ]]).T
         self.msg_true_state = msg_state()
 
     ###################################
@@ -41,11 +43,11 @@ class mav_dynamics:
 
         # Integrate ODE using Runge-Kutta RK4 algorithm
         time_step = self.ts_simulation
-        k1 = self._derivatives(self._state, forces_moments)
+        k1 = self._derivatives(self._state, forces_moments)        
         k2 = self._derivatives(self._state + time_step/2.*k1, forces_moments)
         k3 = self._derivatives(self._state + time_step/2.*k2, forces_moments)
-        k4 = self._derivatives(self._state + time_step*k3, forces_moments)
-        self._state += time_step/6 * (k1 + 2*k2 + 2*k3 + k4)
+        k4 = self._derivatives(self._state + time_step*k3, forces_moments)         
+        self._state += (time_step/6 * (k1 + 2*k2 + 2*k3 + k4))
 
         # normalize the quaternion
         e0 = self._state.item(6)
@@ -89,15 +91,19 @@ class mav_dynamics:
         m = forces_moments.item(4)
         n = forces_moments.item(5)
 
+        q2e = Quaternion2Euler([e0, e1, e2, e3])
+        
+        eq = equations (q2e[2], q2e[1], q2e[0], u, v, w, MAV.Jx, MAV.Jy, MAV.Jz, MAV.Jxz, p, q, r, l, m, n)        
+
         # position kinematics
-        pn_dot =
-        pe_dot =
-        pd_dot =
+        pn_dot = eq.pn_dot()
+        pe_dot = eq.pe_dot()
+        pd_dot = eq.pd_dot()
 
         # position dynamics
-        u_dot = r*v -q*w + fx/13.5
-        v_dot = p*w - r*u + fy/13.5
-        w_dot = q*u - p*v + fz/13.5
+        u_dot = r*v -q*w + fx/MAV.mass
+        v_dot = p*w - r*u + fy/MAV.mass
+        w_dot = q*u - p*v + fz/MAV.mass
 
         # rotational kinematics
         e0_dot = 0.5*(-p*e1 -q*e2 -r*e3)
@@ -106,13 +112,15 @@ class mav_dynamics:
         e3_dot = 0.5*(r*e0 + q*e1 -p*e2)
 
         # rotatonal dynamics
-        p_dot =
-        q_dot =
-        r_dot = 
+        p_dot = eq.rot_dyn()[0]
+        q_dot = eq.rot_dyn()[1]
+        r_dot = eq.rot_dyn()[2]
 
         # collect the derivative of the states
         x_dot = np.array([[pn_dot, pe_dot, pd_dot, u_dot, v_dot, w_dot,
                            e0_dot, e1_dot, e2_dot, e3_dot, p_dot, q_dot, r_dot]]).T
+        print("x_dot:")
+        print(x_dot)
         return x_dot
 
     def _update_msg_true_state(self):

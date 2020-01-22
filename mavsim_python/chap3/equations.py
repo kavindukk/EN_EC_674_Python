@@ -22,8 +22,6 @@ class equations:
 		self.m = m
 		self.n = n
 
-	def function():
-		pass
 
 	def  pn_dot(self):
 		t1 = cos(self.theta)*cos(self.psi)*self.u

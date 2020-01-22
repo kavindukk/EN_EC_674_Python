@@ -44,7 +44,8 @@ while sim_time < SIM.end_time:
     forces_moments = np.array([[fx, fy, fz, Mx, My, Mz]]).T
 
     #-------physical system-------------
-    #mav.update_state(forces_moments)  # propagate the MAV dynamics
+    
+    mav.update_state(forces_moments)  # propagate the MAV dynamics
 
     #-------update viewer-------------
     mav_view.update(mav.msg_true_state)  # plot body of MAV

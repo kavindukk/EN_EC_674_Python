@@ -4,10 +4,11 @@ sin = m.sin
 cos = m.cos
 
 class equations:
-	def __init__(self, psi, theta, phi, u, v, w, jx, jy, jz, jxz, p, q, r, l, m, n):
-		self.psi = psi
-		self.theta = theta
-		self. phi = phi
+	# def __init__(self, psi, theta, phi, u, v, w, jx, jy, jz, jxz, p, q, r, l, m, n):
+	def __init__(self, u, v, w, jx, jy, jz, jxz, p, q, r, l, m, n):
+		# self.psi = psi
+		# self.theta = theta
+		# self. phi = phi
 		self.u = u
 		self.v = v
 		self.w = w
@@ -23,23 +24,23 @@ class equations:
 		self.n = n
 
 
-	def  pn_dot(self):
-		t1 = cos(self.theta)*cos(self.psi)*self.u
-		t2 = (sin(self.phi)*sin(self.theta)*cos(self.psi)-cos(self.phi)*sin(self.psi))*self.v
-		t3 = (cos(self.psi)*sin(self.theta)*cos(self.psi)+sin(self.phi)*sin(self.psi))*self.w
-		return t1 + t2 + t3
+	# def  pn_dot(self):
+	# 	t1 = cos(self.theta)*cos(self.psi)*self.u
+	# 	t2 = (sin(self.phi)*sin(self.theta)*cos(self.psi)-cos(self.phi)*sin(self.psi))*self.v
+	# 	t3 = (cos(self.psi)*sin(self.theta)*cos(self.psi)+sin(self.phi)*sin(self.psi))*self.w
+	# 	return t1 + t2 + t3
 
-	def pe_dot(self):
-		t1 = cos(self.theta)*sin(self.psi)*self.u
-		t2 = (sin(self.phi)*sin(self.theta)*sin(self.psi)+cos(self.phi)*cos(self.psi))*self.v
-		t3 = (cos(self.phi)*sin(self.theta)*sin(self.psi)-sin(self.phi)*cos(self.psi))*self.w
-		return t1 + t2 + t3
+	# def pe_dot(self):
+	# 	t1 = cos(self.theta)*sin(self.psi)*self.u
+	# 	t2 = (sin(self.phi)*sin(self.theta)*sin(self.psi)+cos(self.phi)*cos(self.psi))*self.v
+	# 	t3 = (cos(self.phi)*sin(self.theta)*sin(self.psi)-sin(self.phi)*cos(self.psi))*self.w
+	# 	return t1 + t2 + t3
 
-	def pd_dot(self):
-		t1 = -sin(self.theta)*self.u
-		t2 = sin(self.phi)*cos(self.theta)*self.v
-		t3 = cos(self.phi)*cos(self.theta)*self.w
-		return t1 + t2 + t3
+	# def pd_dot(self):
+	# 	t1 = -sin(self.theta)*self.u
+	# 	t2 = sin(self.phi)*cos(self.theta)*self.v
+	# 	t3 = cos(self.phi)*cos(self.theta)*self.w
+	# 	return t1 + t2 + t3
 
 	def rot_dyn(self):
 		T = self.jx*self.jz-self.jxz*self.jxz

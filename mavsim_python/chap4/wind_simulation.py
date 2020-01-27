@@ -6,12 +6,15 @@ process to represent wind gusts. (Follows section 4.4 in uav book)
 import sys
 sys.path.append('..')
 from tools.transfer_function import transfer_function
+from tools.tools import parameter_calc as pc
 import numpy as np
 
 class wind_simulation:
     def __init__(self, Ts):
         # steady state wind defined in the inertial frame
-        self._steady_state =
+
+        a1, b1, a2, a3, b2, a4, a5, b3 = pc()
+        self._steady_state = np. array([ [0,0,0]])
 
         self.u_w = transfer_function(num=np.array([[a1]]),
                                      den=np.array([[1, b1]]),

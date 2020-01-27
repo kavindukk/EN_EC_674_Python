@@ -8,12 +8,13 @@ chap_edit_branch
 import sys
 sys.path.append('..')
 import numpy as np
+import math as m
 
 # load message types
 from message_types.msg_state import msg_state
 
 import parameters.aerosonde_parameters as MAV
-from tools.tools import Quaternion2Rotation, Quaternion2Euler
+from tools.tools import Quaternion2Rotation, Quaternion2Euler, Inertial2Body
 
 class mav_dynamics:
     def __init__(self, Ts):
@@ -92,15 +93,25 @@ class mav_dynamics:
 
     def _update_velocity_data(self, wind=np.zeros((6,1))):
         # compute airspeed
-        self._Va =
+        phi, theta, psi = Quaternion2Euler([self._state[6], self._state[7], self._state[8], self.state[9]])
+
+        Wnb, Web, Wdb = Inertial2Body(phi, theta, psi, wind[0][0], wind[1][0], wind[2][0])
+
+        u, v, w = self._state[3], self._state[4], self._state[5]
+
+        u_w, v_w, w_w = Wnb+wind[3][0], Web+wind[4][0], Wdb+wind[5][0] 
+
+        u_r, v_r, w_r = u - u_w, v - v_w, w - w_w
+
+
+        self._Va = m.sqrt(u_r**2 + v_r**2 + w_r**2)
         # compute angle of attack
-        self._alpha =
+        self._alpha = m.atan(w_r/u_r)
         # compute sideslip angle
-        self._beta =
+        self._beta = m.asin(v_r/self._Va)
 
     def _forces_moments(self, delta):
-        """
-        return the forces on the UAV based on the state, wind, and control surfaces
+        """        return the forces on the UAV based on the state, wind, and control surfaces
         :param delta: np.matrix(delta_a, delta_e, delta_r, delta_t)
         :return: Forces and Moments on the UAV np.matrix(Fx, Fy, Fz, Ml, Mn, Mm)
         """

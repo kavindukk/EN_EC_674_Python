@@ -2,7 +2,8 @@
 mav_dynamics
     - this file implements the dynamic equations of motion for MAV
     - use unit quaternion for the attitude state
-    
+
+chap_edit_branch
 """
 import sys
 sys.path.append('..')

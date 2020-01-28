@@ -54,4 +54,11 @@ def Inertial2Body (phi, theta, psi, w_n, w_e, w_d):
 
 	wind_b = [w_nb, w_eb, w_db]
 	return wind_b
+
+def Body2Inertia (phi, theta, psi, [u, v, w]):
+	u_i = c(theta)*c(psi)*u + (s(phi)*s(theta)*c(psi) - c(phi)*s(psi))*v + (c(phi)*s(theta)*c(psi)+s(phi)*s(psi))*w
+	v_i = c(theta)*s(psi)*u + (s(phi)*s(theta)*s(psi)+c(phi)*c(psi))*v + (c(phi)*s(theta)*s(psi)-s(phi)*c(psi))*w
+	w_i = - s(theta)*u + s(phi)*c(theta)*v + c(theta)*c(phi)*w
+	body = [u_i, v_i, w_i]
+	return body
 		

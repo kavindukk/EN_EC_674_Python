@@ -14,7 +14,7 @@ import math as m
 from message_types.msg_state import msg_state
 
 import parameters.aerosonde_parameters as MAV
-from tools.tools import Quaternion2Rotation, Quaternion2Euler, Inertial2Body
+from tools.tools import Quaternion2Rotation, Quaternion2Euler, Inertial2Body, Body2Inertia
 
 class mav_dynamics:
     def __init__(self, Ts):
@@ -196,9 +196,11 @@ class mav_dynamics:
         self.msg_true_state.phi = phi
         self.msg_true_state.theta = theta
         self.msg_true_state.psi = psi
-        self.msg_true_state.Vg =
-        self.msg_true_state.gamma =
-        self.msg_true_state.chi =
+        self.msg_true_state.Vg = self._Va + self._wind 
+        vg_i, vg_j, vg_k =  Body2Inertia(phi, theta, psi, self.msg_true_state.Vg )
+
+        self.msg_true_state.gamma = m.asin( -vg_k/m.sqrt(vg_i**2+vg_j**2 + vg_k**2))
+        self.msg_true_state.chi = m.atan(vg_j/vg_i)
         self.msg_true_state.p = self._state.item(10)
         self.msg_true_state.q = self._state.item(11)
         self.msg_true_state.r = self._state.item(12)

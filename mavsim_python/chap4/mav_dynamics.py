@@ -115,6 +115,69 @@ class mav_dynamics:
         :param delta: np.matrix(delta_a, delta_e, delta_r, delta_t)
         :return: Forces and Moments on the UAV np.matrix(Fx, Fy, Fz, Ml, Mn, Mm)
         """
+        phi, theta, psi = Quaternion2Euler([self._state[6], self._state[7], self._state[8], self.state[9]])
+
+        C_X_alpha = -MAV.C_D_alpha*m.cos(self._alpha) + MAV.C_L_alpha*m.sin(self._alpha)
+        C_X_q_alpha = -MAV.C_D_q*m.cos(self._alpha) + MAV.C_L_q*m.sin(self._alpha)
+        C_X_delta_e_alpha = -MAV.C_D_delta_e*m.cos(self._alpha) + MAV.C_L_delta_e*m.sin(self._alpha)
+        C_Z_alpha = -MAV.C_D_alpha*m.sin(self._alpha) - MAV.C_L_alpha*m.cos(self._alpha)
+        C_Z_q_alpha = -MAV.C_D_q*m.sin(self._alpha) - MAV.C_L_q*m.cos(self._alpha)
+        C_Z_delta_e_alpha = -MAV.C_D_delta_e*m.sin(self._alpha) - MAV.C_L_delta_e*m.cos(self._alpha)
+
+        rho, Va, S, q, mass, g, c = MAV.rho, self._Va, MAV.S_wing, self._state[11], MAV.mass, MAV.gravity, MAV.c
+
+        fx = -mass*g*m.sin(theta) + .5*rho*Va**2*S*(C_X_alpha + C_X_q_alpha*c*q/2/Va  + C_X_delta_e_alpha*delta[1] )
+
+        fy = -mass*g*m.cos(theta)*m.sin(phi) + .5*rho*Va**2*S*(MAV.C_Y_0 + MAV.C_Y_beta*self._beta + MAV.C_Y_p*MAV.b*self._state[12]/2/Va + MAV.C_Y_delta_a*delta[0] + MAV.C_Y_delta_r*delta[2] )
+
+        fz = mass*g*m.cos(theta)*m.cos(phi) + .5*rho*Va**2*S*(C_Z_alpha + C_Z_q_alpha*c*self._state[11]/2/Va + C_Z_delta_e_alpha*delta[1])
+
+        C_Y_0 = MAV.C_Y_0
+        C_Y_beta = MAV.C_Y_beta
+        C_Y_p = MAV.C_Y_p
+        C_Y_r = MAV.C_Y_r
+        C_Y_delta_a = MAV.C_Y_delta_a
+        C_Y_delta_r = MAV.C_Y_delta_r
+        C_ell_0 = MAV.C_ell_0
+        C_ell_beta = MAV.C_ell_beta
+        C_ell_p = MAV.C_ell_p
+        C_ell_r = MAV.C_ell_r
+        C_ell_delta_a = MAV.C_ell_delta_a
+        C_ell_delta_r = MAV.C_ell_delta_r
+        C_n_0 = MAV.C_n_0
+        C_n_beta = MAV.C_n_beta
+        C_n_p = MAV.C_n_p
+        C_n_r = MAV.C_n_r
+        C_n_delta_a = MAV.C_n_delta_a
+        C_n_delta_r = -MAV.C_n_delta_r
+        C_m_0 = MAV.C_m_0
+        C_m_alpha = MAV.C_m_alpha
+        C_m_q = MAV.C_m_q
+        C_m_delta_e = MAV.C_m_delta_e
+        b= MAV.b
+        c= MAV.c
+        p = self._state[10]
+        q= self._state[11]
+        r = self._state[12]
+
+        Mx = .5*rho*Va**2*S*b*(C_ell_0 + C_ell_beta*self._beta + C_ell_p*b*r/2/Va + C_ell_r*b*r/2/Va + C_ell_delta_a*delta[0] + C_n_delta_r*delta[2])
+
+        My = .5*rho*Va**2*S*c*(C_m_0 + C_m_alpha*self._alpha + C_m_q*c*q/2/Va +C_m_delta_e*delta[1])
+
+        Mz = .5*rho*Va**2*S*b(C_m_0 + C_n_beta*self._beta + C_n_p*b*p/2/Va + C_n_r*b*r/2/Va + C_n_delta_a*delta[0] + C_n_delta_r*delta[2] )
+
+        V_in = MAV.V_max*delta[3]
+        a = MAV.C_Q0*rho*np.power(MAV.D_prop, 5)
+        b = (MAV.C_Q1*rho*np.power(MAV.D_prop, 4)/(2*np.pi))*Va + MAV.KQ**2/MAV.R_motor
+        c = MAV.C_Q2*rho*np.power(MAV.D_prop, 3)*Va**2 - (MAV.KQ/MAV.R_motor)*V_in + MAV.KQ*MAV.i0
+        Omega_op = (-b + np.sqrt(b**2 - 4*a*c))/(2*a)
+        J_op = 2*np.pi*self._Va/(Omega_op*MAV.D_prop)
+        C_T = MAV.C_T2*J_op**2 + MAV.C_T1*J_op + MAV.C_T0
+        C_Q = MAV.C_Q2*J_op**2 + MAV.C_Q1*J_op + MAV.C_Q0
+        n = Omega_op/(2*np.pi)
+        fx += rho*n**2*np.power(MAV.D_prop, 4)*C_T
+        Mx += -rho*n**2*np.power(MAV.D_prop, 5)*C_Q
+
         self._forces[0] = fx
         self._forces[1] = fy
         self._forces[2] = fz

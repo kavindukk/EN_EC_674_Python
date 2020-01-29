@@ -13,8 +13,12 @@ import math as m
 # load message types
 from message_types.msg_state import msg_state
 
+from chap3.equations import equations
+
 import parameters.aerosonde_parameters as MAV
-from tools.tools import Quaternion2Rotation, Quaternion2Euler, Inertial2Body, Body2Inertia
+from tools.tools import Quaternion2Euler, Inertial2Body, Body2Inertia
+
+# Quaternion2Rotation, 
 
 class mav_dynamics:
     def __init__(self, Ts):
@@ -88,23 +92,76 @@ class mav_dynamics:
 
     ###################################
     # private functions
-    def _derivatives(self, state, forces_moments):
+    def _derivatives(self, state, forces_moments):   
+
+        pn = self._state[0][0]
+        pe = self._state[1][0]
+        pd = self._state[2][0]
+        u = self._state[3][0]
+        v = self._state[4][0]
+        w = self._state[5][0]
+        e0 = self._state[6][0]
+        e1 = self._state[7][0]
+        e2 = self._state[8][0]
+        e3 = self._state[9][0]
+        p = self._state[10][0]
+        q = self._state[11][0]
+        r = self._state[12][0]
+
+        # extract forces and moments
+        fx = forces_moments.item(0)
+        fy = forces_moments.item(1)
+        fz = forces_moments.item(2)
+        l = forces_moments.item(3)
+        m = forces_moments.item(4)
+        n = forces_moments.item(5)
+
+        eq = equations(u, v, w, MAV.Jx, MAV.Jy, MAV.Jz, MAV.Jxz, p, q, r, l, m, n)
+
+        # position kinematics
+        pn_dot = (e1**2+e0**2-e2**2-e3**2)*u +2*(e1*e2-e3*e0)*v +2*(e1*e3+e2*e0)*w
+        pe_dot = 2*(e1*e2 +e3*e0)*u + (e2**2+ e0**2 -e1**2-e3**2)*v +2*(e2*e3 - e1*e0)*w        
+        pd_dot = -2*(e1*e3 -e2*e0)*u -2*(e2*e3 +e1*e0)*v - (e3**2+e0**2-e1**2-e2**2)
+
+        # position dynamics
+        u_dot = r*v -q*w + fx/MAV.mass
+        v_dot = p*w - r*u + fy/MAV.mass
+        w_dot = q*u - p*v + fz/MAV.mass
+  
+        e0_dot = 0.5*(-p*e1 - q*e2 - r*e3)
+        e1_dot = 0.5*(p*e0 + r*e2 - q*e3)
+        e2_dot = 0.5*(q*e0 - r*e1 + +p*e3)
+        e3_dot = 0.5*(r*e0 + q*e1 - p*e2 )
+        
+        # rotatonal dynamics
+        p_dot = eq.rot_dyn()[0]
+        q_dot = eq.rot_dyn()[1]
+        r_dot = eq.rot_dyn()[2]
+
+        # collect the derivative of the states
+        x_dot = np.array([[pn_dot, pe_dot, pd_dot, u_dot, v_dot, w_dot,
+                           e0_dot, e1_dot, e2_dot, e3_dot, p_dot, q_dot, r_dot]]).T      
+         
+       
         return x_dot
 
     def _update_velocity_data(self, wind=np.zeros((6,1))):
         # compute airspeed
-        phi, theta, psi = Quaternion2Euler([self._state[6], self._state[7], self._state[8], self.state[9]])
+        phi, theta, psi = Quaternion2Euler(self._state[6:10])
 
-        Wnb, Web, Wdb = Inertial2Body(phi, theta, psi, wind[0][0], wind[1][0], wind[2][0])
+        Wnb, Web, Wdb = Inertial2Body(phi, theta, psi, wind.item(0), wind.item(1), wind.item(2))
 
         u, v, w = self._state[3], self._state[4], self._state[5]
 
-        u_w, v_w, w_w = Wnb+wind[3][0], Web+wind[4][0], Wdb+wind[5][0] 
+        u_w, v_w, w_w = Wnb+wind.item(3), Web+wind.item(4), Wdb+wind.item(5) 
 
         u_r, v_r, w_r = u - u_w, v - v_w, w - w_w
 
+        print(u)
+        print(v)
+        print(w)
 
-        self._Va = m.sqrt(u_r**2 + v_r**2 + w_r**2)
+        self._Va = np.sqrt(u_r**2 + v_r**2 + w_r**2)
         # compute angle of attack
         self._alpha = m.atan(w_r/u_r)
         # compute sideslip angle
@@ -115,7 +172,7 @@ class mav_dynamics:
         :param delta: np.matrix(delta_a, delta_e, delta_r, delta_t)
         :return: Forces and Moments on the UAV np.matrix(Fx, Fy, Fz, Ml, Mn, Mm)
         """
-        phi, theta, psi = Quaternion2Euler([self._state[6], self._state[7], self._state[8], self.state[9]])
+        phi, theta, psi = Quaternion2Euler([self._state[6], self._state[7], self._state[8], self._state[9]])
 
         C_X_alpha = -MAV.C_D_alpha*m.cos(self._alpha) + MAV.C_L_alpha*m.sin(self._alpha)
         C_X_q_alpha = -MAV.C_D_q*m.cos(self._alpha) + MAV.C_L_q*m.sin(self._alpha)
@@ -164,7 +221,7 @@ class mav_dynamics:
 
         My = .5*rho*Va**2*S*c*(C_m_0 + C_m_alpha*self._alpha + C_m_q*c*q/2/Va +C_m_delta_e*delta[1])
 
-        Mz = .5*rho*Va**2*S*b(C_m_0 + C_n_beta*self._beta + C_n_p*b*p/2/Va + C_n_r*b*r/2/Va + C_n_delta_a*delta[0] + C_n_delta_r*delta[2] )
+        Mz = .5*rho*Va**2*S*b*(C_m_0 + C_n_beta*self._beta + C_n_p*b*p/2/Va + C_n_r*b*r/2/Va + C_n_delta_a*delta[0] + C_n_delta_r*delta[2] )
 
         V_in = MAV.V_max*delta[3]
         a = MAV.C_Q0*rho*np.power(MAV.D_prop, 5)

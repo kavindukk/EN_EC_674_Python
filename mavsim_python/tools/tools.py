@@ -30,9 +30,9 @@ def parameter_calc():
 	sigma_w = .7
 	V_a = 20
 
-	c_u = sigma_u*root(2*V_a/Lu)
-	c_v = sigma_v*root(3*V_a/Lv)
-	c_w = sigma_w*root(3*V_a/Lw)
+	c_u = sigma_u*root(2*V_a/Lu/np.pi)
+	c_v = sigma_v*root(3*V_a/Lv/np.pi)
+	c_w = sigma_w*root(3*V_a/Lw/np.pi)
 
 	a_1 = c_u
 	b_1 = V_a/Lu
@@ -55,10 +55,10 @@ def Inertial2Body (phi, theta, psi, w_n, w_e, w_d):
 	wind_b = [w_nb, w_eb, w_db]
 	return wind_b
 
-def Body2Inertia (phi, theta, psi, [u, v, w]):
-	u_i = c(theta)*c(psi)*u + (s(phi)*s(theta)*c(psi) - c(phi)*s(psi))*v + (c(phi)*s(theta)*c(psi)+s(phi)*s(psi))*w
-	v_i = c(theta)*s(psi)*u + (s(phi)*s(theta)*s(psi)+c(phi)*c(psi))*v + (c(phi)*s(theta)*s(psi)-s(phi)*c(psi))*w
-	w_i = - s(theta)*u + s(phi)*c(theta)*v + c(theta)*c(phi)*w
+def Body2Inertia (phi, theta, psi, v):
+	u_i = c(theta)*c(psi)*v[0] + (s(phi)*s(theta)*c(psi) - c(phi)*s(psi))*v[1] + (c(phi)*s(theta)*c(psi)+s(phi)*s(psi))*v[2]
+	v_i = c(theta)*s(psi)*v[0] + (s(phi)*s(theta)*s(psi)+c(phi)*c(psi))*v[1] + (c(phi)*s(theta)*s(psi)-s(phi)*c(psi))*v[2]
+	w_i = - s(theta)*v[0] + s(phi)*c(theta)*v[1] + c(theta)*c(phi)*v[2]
 	body = [u_i, v_i, w_i]
 	return body
 		

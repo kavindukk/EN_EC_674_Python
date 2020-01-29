@@ -33,7 +33,7 @@ class wind_simulation:
         #   The second three elements are the gust in the body frame
         gust = np.array([[self.u_w.update(np.random.randn())],
                          [self.v_w.update(np.random.randn())],
-                         [self.w_w.update(np.random.randn())]])
-        #gust = np.array([[0.],[0.],[0.]])
+                         [self.w_w.update(np.random.randn())]]).T
+        gust = np.array([[0.],[0.],[0.]]).T
         return np.concatenate(( self._steady_state, gust ))
 

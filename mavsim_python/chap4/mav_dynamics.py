@@ -157,9 +157,9 @@ class mav_dynamics:
 
         u_r, v_r, w_r = u - u_w, v - v_w, w - w_w
 
-        print(u)
-        print(v)
-        print(w)
+        # print(u)
+        # print(v)
+        # print(w)
 
         self._Va = np.sqrt(u_r**2 + v_r**2 + w_r**2)
         # compute angle of attack
@@ -185,7 +185,7 @@ class mav_dynamics:
 
         fx = -mass*g*m.sin(theta) + .5*rho*Va**2*S*(C_X_alpha + C_X_q_alpha*c*q/2/Va  + C_X_delta_e_alpha*delta[1] )
 
-        fy = -mass*g*m.cos(theta)*m.sin(phi) + .5*rho*Va**2*S*(MAV.C_Y_0 + MAV.C_Y_beta*self._beta + MAV.C_Y_p*MAV.b*self._state[12]/2/Va + MAV.C_Y_delta_a*delta[0] + MAV.C_Y_delta_r*delta[2] )
+        fy = mass*g*m.cos(theta)*m.sin(phi) + .5*rho*Va**2*S*(MAV.C_Y_0 + MAV.C_Y_beta*self._beta + MAV.C_Y_p*MAV.b*self._state[12]/2/Va + MAV.C_Y_delta_a*delta[0] + MAV.C_Y_delta_r*delta[2] )
 
         fz = mass*g*m.cos(theta)*m.cos(phi) + .5*rho*Va**2*S*(C_Z_alpha + C_Z_q_alpha*c*self._state[11]/2/Va + C_Z_delta_e_alpha*delta[1])
 
@@ -217,11 +217,11 @@ class mav_dynamics:
         q= self._state[11]
         r = self._state[12]
 
-        Mx = .5*rho*Va**2*S*b*(C_ell_0 + C_ell_beta*self._beta + C_ell_p*b*r/2/Va + C_ell_r*b*r/2/Va + C_ell_delta_a*delta[0] + C_n_delta_r*delta[2])
+        Mx = .5*rho*Va**2*S*b*(C_ell_0 + C_ell_beta*self._beta + C_ell_p*b*p/2/Va + C_ell_r*b*r/2/Va + C_ell_delta_a*delta[0] + C_n_delta_r*delta[2])
 
         My = .5*rho*Va**2*S*c*(C_m_0 + C_m_alpha*self._alpha + C_m_q*c*q/2/Va +C_m_delta_e*delta[1])
 
-        Mz = .5*rho*Va**2*S*b*(C_m_0 + C_n_beta*self._beta + C_n_p*b*p/2/Va + C_n_r*b*r/2/Va + C_n_delta_a*delta[0] + C_n_delta_r*delta[2] )
+        Mz = .5*rho*Va**2*S*b*(C_n_0 + C_n_beta*self._beta + C_n_p*b*p/2/Va + C_n_r*b*r/2/Va + C_n_delta_a*delta[0] + C_n_delta_r*delta[2] )
 
         V_in = MAV.V_max*delta[3]
         a = MAV.C_Q0*rho*np.power(MAV.D_prop, 5)
@@ -233,7 +233,7 @@ class mav_dynamics:
         C_Q = MAV.C_Q2*J_op**2 + MAV.C_Q1*J_op + MAV.C_Q0
         n = Omega_op/(2*np.pi)
         fx += rho*n**2*np.power(MAV.D_prop, 4)*C_T
-        Mx += -rho*n**2*np.power(MAV.D_prop, 5)*C_Q
+        # Mx += -rho*n**2*np.power(MAV.D_prop, 5)*C_Q
 
         self._forces[0] = fx
         self._forces[1] = fy

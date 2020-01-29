@@ -253,8 +253,8 @@ class mav_dynamics:
         self.msg_true_state.phi = phi
         self.msg_true_state.theta = theta
         self.msg_true_state.psi = psi
-        self.msg_true_state.Vg = self._Va + self._wind 
-        vg_i, vg_j, vg_k =  Body2Inertia(phi, theta, psi, self.msg_true_state.Vg )
+        self.msg_true_state.Vg = m.sqrt((self._state[3][0])**2+(self._state[4][0])**2+(self._state[3][0])**2)
+        vg_i, vg_j, vg_k = Body2Inertia(phi, theta, psi, self.msg_true_state.Vg )
 
         self.msg_true_state.gamma = m.asin( -vg_k/m.sqrt(vg_i**2+vg_j**2 + vg_k**2))
         self.msg_true_state.chi = m.atan(vg_j/vg_i)

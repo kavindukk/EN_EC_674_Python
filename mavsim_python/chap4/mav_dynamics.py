@@ -63,7 +63,7 @@ class mav_dynamics:
             Ts is the time step between function calls.
         '''
         # get forces and moments acting on rigid bod
-        forces_moments = self._forces_moments(delta)
+        forces_moments = self._forces_moments(delta)        
 
         # Integrate ODE using Runge-Kutta RK4 algorithm
         time_step = self._ts_simulation
@@ -121,7 +121,7 @@ class mav_dynamics:
         # position kinematics
         pn_dot = (e1**2+e0**2-e2**2-e3**2)*u +2*(e1*e2-e3*e0)*v +2*(e1*e3+e2*e0)*w
         pe_dot = 2*(e1*e2 +e3*e0)*u + (e2**2+ e0**2 -e1**2-e3**2)*v +2*(e2*e3 - e1*e0)*w        
-        pd_dot = -2*(e1*e3 -e2*e0)*u -2*(e2*e3 +e1*e0)*v - (e3**2+e0**2-e1**2-e2**2)
+        pd_dot = 2*(e1*e3 -e2*e0)*u +2*(e2*e3 +e1*e0)*v +(e3**2+e0**2-e1**2-e2**2)*w
 
         # position dynamics
         u_dot = r*v -q*w + fx/MAV.mass
@@ -146,26 +146,47 @@ class mav_dynamics:
         return x_dot
 
     def _update_velocity_data(self, wind=np.zeros((6,1))):
+
         # compute airspeed
+        
         phi, theta, psi = Quaternion2Euler(self._state[6:10])
+       
+        Wnb = Inertial2Body(phi, theta, psi, wind.item(0), wind.item(1), wind.item(2))[0]
+        Web = Inertial2Body(phi, theta, psi, wind.item(0), wind.item(1), wind.item(2))[1]
+        Wdb = Inertial2Body(phi, theta, psi, wind.item(0), wind.item(1), wind.item(2))[2]
 
-        Wnb, Web, Wdb = Inertial2Body(phi, theta, psi, wind.item(0), wind.item(1), wind.item(2))
+        u = self._state[3]
+        v = self._state[4] 
+        w = self._state[5]
 
-        u, v, w = self._state[3], self._state[4], self._state[5]
+        u_w = Wnb+wind.item(3)
+        v_w = Web+wind.item(4)
+        w_w = Wdb+wind.item(5) 
 
-        u_w, v_w, w_w = Wnb+wind.item(3), Web+wind.item(4), Wdb+wind.item(5) 
+        u_r = u - u_w
+        v_r = v - v_w
+        w_r = w - w_w
 
-        u_r, v_r, w_r = u - u_w, v - v_w, w - w_w
+        print("phi", phi, "theta", theta, "psi", psi)
+        print("Wnb", Wnb,"Web", Web, "Wdb", Wdb)
+        print("u", u,         "v", v,        "w", w)
+        print("u_w", u_w,         "v_w", v_w,         "w_w", w_w)
+        print("u_r", u_r,         "v_r", v_r,         "w_r", w_r)
+        print("g_n", wind.item(3), "g_e", wind.item(4), "g_d", wind.item(5))
 
-        # print(u)
-        # print(v)
-        # print(w)
+        self._Va = m.sqrt(u_r**2 + v_r**2 + w_r**2)
+        # print(self._Va)
 
-        self._Va = np.sqrt(u_r**2 + v_r**2 + w_r**2)
+        
         # compute angle of attack
-        self._alpha = m.atan(w_r/u_r)
-        # compute sideslip angle
-        self._beta = m.asin(v_r/self._Va)
+        if self._Va == 0:
+            self._alpha = 0
+            self._beta = 0
+        else:
+            self._alpha = np.arctan2(w_r,u_r)        
+            # compute sideslip angle
+            self._beta = m.asin(v_r/self._Va)
+
 
     def _forces_moments(self, delta):
         """        return the forces on the UAV based on the state, wind, and control surfaces
@@ -183,11 +204,13 @@ class mav_dynamics:
 
         rho, Va, S, q, mass, g, c = MAV.rho, self._Va, MAV.S_wing, self._state[11], MAV.mass, MAV.gravity, MAV.c
 
-        fx = -mass*g*m.sin(theta) + .5*rho*Va**2*S*(C_X_alpha + C_X_q_alpha*c*q/2/Va  + C_X_delta_e_alpha*delta[1] )
+        fx = -mass*g*m.sin(theta) + .5*rho*Va**2*S*(C_X_alpha + C_X_q_alpha*c*q/2/Va  + C_X_delta_e_alpha*delta[0] )
 
-        fy = mass*g*m.cos(theta)*m.sin(phi) + .5*rho*Va**2*S*(MAV.C_Y_0 + MAV.C_Y_beta*self._beta + MAV.C_Y_p*MAV.b*self._state[12]/2/Va + MAV.C_Y_delta_a*delta[0] + MAV.C_Y_delta_r*delta[2] )
+        fy = mass*g*m.cos(theta)*m.sin(phi) + .5*rho*Va**2*S*(MAV.C_Y_0 + MAV.C_Y_beta*self._beta + MAV.C_Y_p*MAV.b*self._state[12]/2/Va + MAV.C_Y_delta_a*delta[2] + MAV.C_Y_delta_r*delta[3] )
 
-        fz = mass*g*m.cos(theta)*m.cos(phi) + .5*rho*Va**2*S*(C_Z_alpha + C_Z_q_alpha*c*self._state[11]/2/Va + C_Z_delta_e_alpha*delta[1])
+        fz = mass*g*m.cos(theta)*m.cos(phi) + .5*rho*Va**2*S*(C_Z_alpha + C_Z_q_alpha*c*self._state[11]/2/Va + C_Z_delta_e_alpha*delta[0])
+
+     
 
         C_Y_0 = MAV.C_Y_0
         C_Y_beta = MAV.C_Y_beta
@@ -217,15 +240,17 @@ class mav_dynamics:
         q= self._state[11]
         r = self._state[12]
 
-        Mx = .5*rho*Va**2*S*b*(C_ell_0 + C_ell_beta*self._beta + C_ell_p*b*p/2/Va + C_ell_r*b*r/2/Va + C_ell_delta_a*delta[0] + C_n_delta_r*delta[2])
+        Mx = .5*rho*Va**2*S*b*(C_ell_0 + C_ell_beta*self._beta + C_ell_p*b*p/2/Va + C_ell_r*b*r/2/Va + C_ell_delta_a*delta[2] + C_n_delta_r*delta[3])
 
-        My = .5*rho*Va**2*S*c*(C_m_0 + C_m_alpha*self._alpha + C_m_q*c*q/2/Va +C_m_delta_e*delta[1])
+        My = .5*rho*Va**2*S*c*(C_m_0 + C_m_alpha*self._alpha + C_m_q*c*q/2/Va +C_m_delta_e*delta[0])
 
-        Mz = .5*rho*Va**2*S*b*(C_n_0 + C_n_beta*self._beta + C_n_p*b*p/2/Va + C_n_r*b*r/2/Va + C_n_delta_a*delta[0] + C_n_delta_r*delta[2] )
+        Mz = .5*rho*Va**2*S*b*(C_n_0 + C_n_beta*self._beta + C_n_p*b*p/2/Va + C_n_r*b*r/2/Va + C_n_delta_a*delta[2] + C_n_delta_r*delta[3] )
+
+       
 
         V_in = MAV.V_max*delta[3]
         a = MAV.C_Q0*rho*np.power(MAV.D_prop, 5)
-        b = (MAV.C_Q1*rho*np.power(MAV.D_prop, 4)/(2*np.pi))*Va + MAV.KQ**2/MAV.R_motor
+        b = (MAV.C_Q1*rho*np.power(MAV.D_prop, 4)/(2*np.pi)**2)*Va + MAV.KQ**2/MAV.R_motor
         c = MAV.C_Q2*rho*np.power(MAV.D_prop, 3)*Va**2 - (MAV.KQ/MAV.R_motor)*V_in + MAV.KQ*MAV.i0
         Omega_op = (-b + np.sqrt(b**2 - 4*a*c))/(2*a)
         J_op = 2*np.pi*self._Va/(Omega_op*MAV.D_prop)
@@ -233,7 +258,14 @@ class mav_dynamics:
         C_Q = MAV.C_Q2*J_op**2 + MAV.C_Q1*J_op + MAV.C_Q0
         n = Omega_op/(2*np.pi)
         fx += rho*n**2*np.power(MAV.D_prop, 4)*C_T
-        # Mx += -rho*n**2*np.power(MAV.D_prop, 5)*C_Q
+        Mx += -rho*n**2*np.power(MAV.D_prop, 5)*C_Q
+
+        # fx = 0
+        # fy = 0
+        # fz = 0
+        # Mx = 0.0
+        # My = 0.0
+        # Mz = 0.0
 
         self._forces[0] = fx
         self._forces[1] = fy
@@ -243,7 +275,7 @@ class mav_dynamics:
     def _update_msg_true_state(self):
         # update the class structure for the true state:
         #   [pn, pe, h, Va, alpha, beta, phi, theta, chi, p, q, r, Vg, wn, we, psi, gyro_bx, gyro_by, gyro_bz]
-        phi, theta, psi = Quaternion2Euler(self._state[6:10])
+        phi, theta, psi = Quaternion2Euler(self._state[6:10])        
         self.msg_true_state.pn = self._state.item(0)
         self.msg_true_state.pe = self._state.item(1)
         self.msg_true_state.h = -self._state.item(2)
@@ -253,11 +285,24 @@ class mav_dynamics:
         self.msg_true_state.phi = phi
         self.msg_true_state.theta = theta
         self.msg_true_state.psi = psi
-        self.msg_true_state.Vg = m.sqrt((self._state[3][0])**2+(self._state[4][0])**2+(self._state[3][0])**2)
-        vg_i, vg_j, vg_k = Body2Inertia(phi, theta, psi, self.msg_true_state.Vg )
+        self.msg_true_state.Vg = m.sqrt((self._state[3][0])**2+(self._state[4][0])**2+(self._state[5][0])**2)
 
-        self.msg_true_state.gamma = m.asin( -vg_k/m.sqrt(vg_i**2+vg_j**2 + vg_k**2))
-        self.msg_true_state.chi = m.atan(vg_j/vg_i)
+        e0 = self._state[6][0]
+        e1 = self._state[7][0]
+        e2 = self._state[8][0]
+        e3 = self._state[9][0]
+        u = self._state[3][0]
+        v = self._state[4][0]
+        w = self._state[5][0]
+
+        pn_dot = (e1**2+e0**2-e2**2-e3**2)*u +2*(e1*e2-e3*e0)*v +2*(e1*e3+e2*e0)*w
+        pe_dot = 2*(e1*e2 +e3*e0)*u + (e2**2+ e0**2 -e1**2-e3**2)*v +2*(e2*e3 - e1*e0)*w        
+        pd_dot = 2*(e1*e3 -e2*e0)*u +2*(e2*e3 +e1*e0)*v +(e3**2+e0**2-e1**2-e2**2)*w
+
+        # pn_dot, pe_dot, vg_k = Body2Inertia(phi, theta, psi, [self.state[3][0], self.state[4][0], self.state[5][0]] )
+
+        self.msg_true_state.gamma = m.asin(m.sqrt(pn_dot**2+pe_dot**2)/m.sqrt(pn_dot**2+pe_dot**2 + pd_dot**2))
+        self.msg_true_state.chi = m.atan(pe_dot/pn_dot)
         self.msg_true_state.p = self._state.item(10)
         self.msg_true_state.q = self._state.item(11)
         self.msg_true_state.r = self._state.item(12)

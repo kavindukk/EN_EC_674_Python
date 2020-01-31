@@ -281,8 +281,11 @@ class mav_dynamics:
         C_T = MAV.C_T2*J_op**2 + MAV.C_T1*J_op + MAV.C_T0
         C_Q = MAV.C_Q2*J_op**2 + MAV.C_Q1*J_op + MAV.C_Q0
         n = Omega_op/(2*np.pi)
-        fx += rho*n**2*np.power(MAV.D_prop, 4)*C_T
-        Mx += -rho*n**2*np.power(MAV.D_prop, 5)*C_Q
+
+        fx += 0.5 * rho *MAV.S_prop * MAV.C_prop * ((MAV.k_motor)**2 * delta[1]**2 - self._Va**2)
+        Mx += -MAV.kTp * MAV.kOmega **2 * delta[1]**2
+        # fx += rho*n**2*np.power(MAV.D_prop, 4)*C_T
+        # Mx += -rho*n**2*np.power(MAV.D_prop, 5)*C_Q
 
         # fx = 0
         # fy = 0

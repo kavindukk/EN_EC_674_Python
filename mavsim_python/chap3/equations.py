@@ -53,9 +53,13 @@ class equations:
 		T7 = ((self.jx - self.jy)*self.jx +self.jxz*self.jxz)/T
 		T8 = self.jx/T
 
-		p_dot = T1*self.p*self.q - T2*self.q*self.r +T3*self.l +T4*self.n
-		q_dot = T5*self.p*self.r -T6*(self.p*self.p - self.r*self.r) + self.m/self.jy
-		r_dot = T7*self.p*self.q -T1*self.q*self.r + T4*self.l + T8*self.n
+		# p_dot = T1*self.p*self.q - T2*self.q*self.r +T3*self.l +T4*self.n
+		# q_dot = T5*self.p*self.r -T6*(self.p*self.p - self.r*self.r) + self.m/self.jy
+		# r_dot = T7*self.p*self.q -T1*self.q*self.r + T4*self.l + T8*self.n
+
+		p_dot = T1*self.p*self.q - T2*self.q*self.r 
+		q_dot = T5*self.p*self.r -T6*(self.p*self.p - self.r*self.r)
+		r_dot = T7*self.p*self.q -T1*self.q*self.r 
 
 		dot_values = [p_dot, q_dot, r_dot ]
 		return dot_values

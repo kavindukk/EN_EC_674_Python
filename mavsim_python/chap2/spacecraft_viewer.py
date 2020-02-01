@@ -131,7 +131,7 @@ class spacecraft_viewer():
                           ]).T
         # scale points for better rendering
 
-        scale = 10
+        scale = 3
         points = scale * points
 
         #   define the colors for each face of triangular mesh

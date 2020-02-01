@@ -142,7 +142,7 @@ class mav_dynamics:
         x_dot = np.array([[pn_dot, pe_dot, pd_dot, u_dot, v_dot, w_dot,
                            e0_dot, e1_dot, e2_dot, e3_dot, p_dot, q_dot, r_dot]]).T      
          
-       
+        
         return x_dot
 
     def _update_velocity_data(self, wind=np.zeros((6,1))):
@@ -178,14 +178,10 @@ class mav_dynamics:
         # print(self._Va)
 
         
-        # compute angle of attack
-        if self._Va == 0:
-            self._alpha = 0
-            self._beta = 0
-        else:
-            self._alpha = np.arctan2(w_r,u_r)        
-            # compute sideslip angle
-            self._beta = m.asin(v_r/self._Va)
+        # compute angle of attack      
+        self._alpha = np.arctan2(w_r,u_r)        
+        # compute sideslip angle
+        self._beta = m.asin(v_r/self._Va)
 
 
     def _forces_moments(self, delta):
@@ -266,21 +262,85 @@ class mav_dynamics:
         q= self._state[11]
         r = self._state[12]
 
-        Mx = .5*rho*Va**2*S*b*(C_ell_0 + C_ell_beta*self._beta + C_ell_p*b*p/2/Va + C_ell_r*b*r/2/Va + C_ell_delta_a*delta[2] + C_n_delta_r*delta[3])
-        My = .5*rho*Va**2*S*c*(C_m_0 + C_m_alpha*self._alpha + C_m_q*c*q/2/Va +C_m_delta_e*delta[0])
-        Mz = .5*rho*Va**2*S*b*(C_n_0 + C_n_beta*self._beta + C_n_p*b*p/2/Va + C_n_r*b*r/2/Va + C_n_delta_a*delta[2] + C_n_delta_r*delta[3] )
+        # Mx = .5*rho*Va**2*S*b*(C_ell_0 + C_ell_beta*self._beta + C_ell_p*b*p/2/Va + C_ell_r*b*r/2/Va + C_ell_delta_a*delta[2] + C_n_delta_r*delta[3])
+        # My = .5*rho*Va**2*S*c*(C_m_0 + C_m_alpha*self._alpha + C_m_q*c*q/2/Va +C_m_delta_e*delta[0])/MAV.Jy
+        # Mz = .5*rho*Va**2*S*b*(C_n_0 + C_n_beta*self._beta + C_n_p*b*p/2/Va + C_n_r*b*r/2/Va + C_n_delta_a*delta[2] + C_n_delta_r*delta[3] )
+        jx, jy, jz, jxz = MAV.Jx, MAV.Jy, MAV.Jz, MAV.Jxz
 
+
+        T = jx*jz-jxz*jxz
+        T1 = (jx-jy+jz)*jxz/T
+        T2 = ((jz-jy)*jz+jxz*jxz)/T
+        T3 = jz/T
+        T4 = jxz/T
+        T5 = (jz-jx)/jy
+        T6 = jxz/jy
+        T7 = ((jx - jy)*jx +jxz*jxz)/T
+        T8 = jx/T
+
+        Cp_o = T3*C_ell_0 + T4*C_n_0
+        Cp_beta = T3*C_ell_beta + T4*C_n_beta
+        Cp_p = T3*C_ell_p + T4*C_n_p
+        Cp_r = T3*C_ell_r + T4*C_n_r
+        Cp_delta_a = T3*C_ell_delta_a + T4*C_n_delta_a
+        Cp_delta_r = T3*C_ell_delta_r + T4*C_n_delta_r
+        Cr_o = T4*C_ell_0 +T8*C_n_0
+        Cr_beta = T4*C_ell_beta + T8*C_n_beta
+        Cr_p = T4*C_ell_p +T8*C_n_p
+        Cr_r = T4*C_ell_r +T8*C_n_r
+        Cr_delta_a = T4*C_ell_delta_a + T8*C_n_delta_a
+        Cr_delta_r = T4*C_ell_delta_r + T8*C_n_delta_r
+
+
+        Mx = .5*rho*Va**2*S*b*(Cp_o + Cp_beta*self._beta + Cp_p*b*p/2/Va + Cp_r*b*r/2/Va + Cp_delta_a*delta[2] + Cp_delta_r*delta[3])
+        My = .5*rho*Va**2*S*c*(C_m_0 + C_m_alpha*self._alpha + C_m_q*c*q/2/Va +C_m_delta_e*delta[0])/jy
+        Mz = .5*rho*Va**2*S*b*(Cr_o + Cr_beta*self._beta + Cr_p*b*p/2/Va + Cr_r*b*r/2/Va + Cr_delta_a*delta[2] + Cr_delta_r*delta[3] )
        
+        D = MAV.D_prop
+        C_Q2 = MAV.C_Q2  
+        C_Q1 = MAV.C_Q1  
+        C_Q0 = MAV.C_Q0  
+        C_T2 = MAV.C_T2  
+        C_T1 = MAV.C_T1  
+        C_T0 = MAV.C_T0  
+        K_V  = MAV.K_V                  # from datasheet RPM/V
+        KQ   = MAV.KQ                   # KQ in N-m/A, V-s/rad
+        R    = MAV.R_motor              # ohms
+        V_in = MAV.V_max*delta[1]
+        KQ_i0 = MAV.i0
 
-        V_in = MAV.V_max*delta[3]
-        a = MAV.C_Q0*rho*np.power(MAV.D_prop, 5)
-        b = (MAV.C_Q1*rho*np.power(MAV.D_prop, 4)/(2*np.pi)**2)*Va + MAV.KQ**2/MAV.R_motor
-        c = MAV.C_Q2*rho*np.power(MAV.D_prop, 3)*Va**2 - (MAV.KQ/MAV.R_motor)*V_in + MAV.KQ*MAV.i0
-        Omega_op = (-b + np.sqrt(b**2 - 4*a*c))/(2*a)
-        J_op = 2*np.pi*self._Va/(Omega_op*MAV.D_prop)
-        C_T = MAV.C_T2*J_op**2 + MAV.C_T1*J_op + MAV.C_T0
-        C_Q = MAV.C_Q2*J_op**2 + MAV.C_Q1*J_op + MAV.C_Q0
-        n = Omega_op/(2*np.pi)
+        #Propeller Model in slides-----------
+
+        a = rho*np.power(D,5)*C_Q0/(2*np.pi)**2
+        b = rho*np.power(D,4)*C_Q1*self._Va/(2*np.pi) + KQ*K_V/R
+        c = rho*np.power(D,3)*C_Q2*(self._Va)**2 - KQ*V_in/R + KQ_i0
+
+        omega_op = (-b + np.sqrt(b**2 - 4*a*c))/(2*a)
+        J_op = 2*np.pi*self._Va/omega_op/D 
+
+        CT = C_T0 + C_T1*J_op + C_T2*J_op**2
+        CQ = C_Q0 + C_Q1*J_op + C_Q2*J_op**2
+
+        n = omega_op/(2*np.pi)
+
+        # Tp = rho*n**2*np.power(D,4)*CT
+        # Qp = rho*n**2*np.power(D,5)*CQ
+
+        # Tp = rho*np.power(D,4)*omega_op**2*CT/(2*np.pi)**2
+        # Qp = rho*np.power(D,5)*omega_op**2*CQ/(2*np.pi)**2
+
+        # fx += Tp
+        # Mx += Qp
+
+        # V_in = self._Va*delta[3]
+        # a = MAV.C_Q0*rho*np.power(MAV.D_prop, 5)
+        # b = (MAV.C_Q1*rho*np.power(MAV.D_prop, 4)/(2*np.pi)**2)*Va + MAV.KQ**2/MAV.R_motor
+        # c = MAV.C_Q2*rho*np.power(MAV.D_prop, 3)*Va**2 - (MAV.KQ/MAV.R_motor)*V_in + MAV.KQ*MAV.i0
+        # Omega_op = (-b + np.sqrt(b**2 - 4*a*c))/(2*a)
+        # J_op = 2*np.pi*self._Va/(Omega_op*MAV.D_prop)
+        # C_T = MAV.C_T2*J_op**2 + MAV.C_T1*J_op + MAV.C_T0
+        # C_Q = MAV.C_Q2*J_op**2 + MAV.C_Q1*J_op + MAV.C_Q0
+        # n = Omega_op/(2*np.pi)
 
         fx += 0.5 * rho *MAV.S_prop * MAV.C_prop * ((MAV.k_motor)**2 * delta[1]**2 - self._Va**2)
         Mx += -MAV.kTp * MAV.kOmega **2 * delta[1]**2
@@ -288,7 +348,7 @@ class mav_dynamics:
         # Mx += -rho*n**2*np.power(MAV.D_prop, 5)*C_Q
 
         # fx = 0
-        # fy = 0
+        # fy = 0         
         # fz = 0
         # Mx = 0.0
         # My = 0.0

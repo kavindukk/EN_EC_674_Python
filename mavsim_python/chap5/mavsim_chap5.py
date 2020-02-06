@@ -11,8 +11,8 @@ sys.path.append('..')
 import numpy as np
 import parameters.simulation_parameters as SIM
 
-from chap2.mav_viewer import mav_viewer
-from chap2.video_writer import video_writer
+from chap2.spacecraft_viewer import spacecraft_viewer as mav_viewer
+# from chap2.video_writer import video_writer
 from chap3.data_viewer import data_viewer
 from chap4.mav_dynamics import mav_dynamics
 from chap4.wind_simulation import wind_simulation
@@ -20,13 +20,13 @@ from chap5.trim import compute_trim
 from chap5.compute_models import compute_ss_model, compute_tf_model
 
 # initialize the visualization
-VIDEO = False  # True==write video, False==don't write video
+# VIDEO = False  # True==write video, False==don't write video
 mav_view = mav_viewer()  # initialize the mav viewer
 data_view = data_viewer()  # initialize view of data plots
-if VIDEO == True:
-    video = video_writer(video_name="chap5_video.avi",
-                         bounding_box=(0, 0, 1000, 1000),
-                         output_rate=SIM.ts_video)
+# if VIDEO == True:
+#     video = video_writer(video_name="chap5_video.avi",
+#                          bounding_box=(0, 0, 1000, 1000),
+#                          output_rate=SIM.ts_video)
 
 # initialize elements of the architecture
 wind = wind_simulation(SIM.ts_simulation)
@@ -40,10 +40,10 @@ mav._state = trim_state  # set the initial state of the mav to the trim state
 delta = trim_input  # set input to constant constant trim input
 
 # # compute the state space model linearized about trim
-A_lon, B_lon, A_lat, B_lat = compute_ss_model(mav, trim_state, trim_input)
-T_phi_delta_a, T_chi_phi, T_theta_delta_e, T_h_theta, \
-T_h_Va, T_Va_delta_t, T_Va_theta, T_beta_delta_r \
-    = compute_tf_model(mav, trim_state, trim_input)
+# A_lon, B_lon, A_lat, B_lat = compute_ss_model(mav, trim_state, trim_input)
+# T_phi_delta_a, T_chi_phi, T_theta_delta_e, T_h_theta, \
+# T_h_Va, T_Va_delta_t, T_Va_theta, T_beta_delta_r \
+#     = compute_tf_model(mav, trim_state, trim_input)
 
 # initialize the simulation time
 sim_time = SIM.start_time
@@ -63,14 +63,14 @@ while sim_time < SIM.end_time:
                      mav.msg_true_state, # estimated states
                      mav.msg_true_state, # commanded states
                      SIM.ts_simulation)
-    if VIDEO == True:
-        video.update(sim_time)
+    # if VIDEO == True:
+    #     video.update(sim_time)
 
     #-------increment time-------------
     sim_time += SIM.ts_simulation
 
-if VIDEO == True:
-    video.close()
+# if VIDEO == True:
+#     video.close()
 
 
 

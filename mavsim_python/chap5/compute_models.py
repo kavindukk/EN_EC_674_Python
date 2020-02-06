@@ -24,6 +24,7 @@ def compute_ss_model(mav, trim_state, trim_input):
 def euler_state(x_quat):
     # convert state x with attitude represented by quaternion
     # to x_euler with attitude represented by Euler angles
+    
      return x_euler
 
 def quaternion_state(x_euler):
@@ -35,7 +36,7 @@ def f_euler(mav, x_euler, input):
     # return 12x1 dynamics (as if state were Euler state)
     # compute f at euler_state
     return f_euler_
-
+4+0
 def df_dx(mav, x_euler, input):
     # take partial of f_euler with respect to x_euler
     return A

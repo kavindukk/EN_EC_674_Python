@@ -78,6 +78,13 @@ class mav_dynamics:
         e1 = self._state.item(7)
         e2 = self._state.item(8)
         e3 = self._state.item(9)
+
+        e0 = self._state.item(6)
+        e1 = self._state.item(7)
+        e2 = self._state.item(8)
+        e3 = self._state.item(9)
+
+
         normE = np.sqrt(e0**2+e1**2+e2**2+e3**2)
         self._state[6][0] = self._state.item(6)/normE
         self._state[7][0] = self._state.item(7)/normE
@@ -94,19 +101,34 @@ class mav_dynamics:
     # private functions
     def _derivatives(self, state, forces_moments):   
 
-        pn = self._state[0][0]
-        pe = self._state[1][0]
-        pd = self._state[2][0]
-        u = self._state[3][0]
-        v = self._state[4][0]
-        w = self._state[5][0]
-        e0 = self._state[6][0]
-        e1 = self._state[7][0]
-        e2 = self._state[8][0]
-        e3 = self._state[9][0]
-        p = self._state[10][0]
-        q = self._state[11][0]
-        r = self._state[12][0]
+        # pn = self._state[0][0]
+        # pe = self._state[1][0]
+        # pd = self._state[2][0]
+        # u = self._state[3][0]
+        # v = self._state[4][0]
+        # w = self._state[5][0]
+        # e0 = self._state[6][0]
+        # e1 = self._state[7][0]
+        # e2 = self._state[8][0]
+        # e3 = self._state[9][0]
+        # p = self._state[10][0]
+        # q = self._state[11][0]
+        # r = self._state[12][0]
+
+
+        pn = self._state.item(0)
+        pe = self._state.item(1)
+        pd = self._state.item(2)
+        u = self._state.item(3)
+        v = self._state.item(4)
+        w = self._state.item(5)
+        e0 = self._state.item(6)
+        e1 = self._state.item(7)
+        e2 = self._state.item(8)
+        e3 = self._state.item(9)
+        p = self._state.item(10)
+        q = self._state.item(11)
+        r = self._state.item(12)
 
         # extract forces and moments
         fx = forces_moments.item(0)
@@ -189,10 +211,17 @@ class mav_dynamics:
         :param delta: np.matrix(delta_a, delta_e, delta_r, delta_t)
         :return: Forces and Moments on the UAV np.matrix(Fx, Fy, Fz, Ml, Mn, Mm)
         """
-        e0 = self._state[6][0]
-        e1 = self._state[7][0]
-        e2 = self._state[8][0]
-        e3 = self._state[9][0]
+        # e0 = self._state[6][0]
+        # e1 = self._state[7][0]
+        # e2 = self._state[8][0]
+        # e3 = self._state[9][0]
+
+        e0 = self._state.item(6)
+        e1 = self._state.item(7)
+        e2 = self._state.item(8)
+        e3 = self._state.item(9)
+
+
         phi, theta, psi = Quaternion2Euler([self._state[6], self._state[7], self._state[8], self._state[9]])
 
         # C_X_alpha = -MAV.C_D_alpha*m.cos(self._alpha) + MAV.C_L_alpha*m.sin(self._alpha)
@@ -326,11 +355,11 @@ class mav_dynamics:
         # Tp = rho*n**2*np.power(D,4)*CT
         # Qp = rho*n**2*np.power(D,5)*CQ
 
-        # Tp = rho*np.power(D,4)*omega_op**2*CT/(2*np.pi)**2
-        # Qp = rho*np.power(D,5)*omega_op**2*CQ/(2*np.pi)**2
+        Tp = rho*np.power(D,4)*omega_op**2*CT/(2*np.pi)**2
+        Qp = rho*np.power(D,5)*omega_op**2*CQ/(2*np.pi)**2
 
-        # fx += Tp
-        # Mx += Qp
+        fx += Tp
+        Mx += Qp
 
         # V_in = self._Va*delta[3]
         # a = MAV.C_Q0*rho*np.power(MAV.D_prop, 5)
@@ -342,8 +371,8 @@ class mav_dynamics:
         # C_Q = MAV.C_Q2*J_op**2 + MAV.C_Q1*J_op + MAV.C_Q0
         # n = Omega_op/(2*np.pi)
 
-        fx += 0.5 * rho *MAV.S_prop * MAV.C_prop * ((MAV.k_motor)**2 * delta[1]**2 - self._Va**2)
-        Mx += -MAV.kTp * MAV.kOmega **2 * delta[1]**2
+        # fx += 0.5 * rho *MAV.S_prop * MAV.C_prop * ((MAV.k_motor)**2 * delta[1]**2 - self._Va**2)
+        # Mx += -MAV.kTp * MAV.kOmega **2 * delta[1]**2
         # fx += rho*n**2*np.power(MAV.D_prop, 4)*C_T
         # Mx += -rho*n**2*np.power(MAV.D_prop, 5)*C_Q
 

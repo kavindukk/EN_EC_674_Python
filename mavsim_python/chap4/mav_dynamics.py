@@ -156,9 +156,13 @@ class mav_dynamics:
         e3_dot = 0.5*(r*e0 + q*e1 - p*e2 )
         
         # rotatonal dynamics
-        p_dot = eq.rot_dyn()[0] + l
-        q_dot = eq.rot_dyn()[1] + m
-        r_dot = eq.rot_dyn()[2] + n
+        # p_dot = eq.rot_dyn()[0] + l
+        # q_dot = eq.rot_dyn()[1] + m
+        # r_dot = eq.rot_dyn()[2] + n
+
+        p_dot = MAV.gamma1*p*q -MAV.gamma2*q*r + MAV.gamma3*l + MAV.gamma4*n
+        q_dot = MAV.gamma5*p*r -MAV.gamma6*(p**2 - r**2) + m/MAV.Jy
+        r_dot = MAV.gamma7*p*q -MAV.gamma1*q*r + MAV.gamma4*l + MAV.gamma8*n
 
         # collect the derivative of the states
         x_dot = np.array([[pn_dot, pe_dot, pd_dot, u_dot, v_dot, w_dot,
@@ -189,16 +193,7 @@ class mav_dynamics:
         v_r = v - v_w
         w_r = w - w_w
 
-        # print("phi", phi, "theta", theta, "psi", psi)
-        # print("Wnb", Wnb,"Web", Web, "Wdb", Wdb)
-        # print("u", u,         "v", v,        "w", w)
-        # print("u_w", u_w,         "v_w", v_w,         "w_w", w_w)
-        # print("u_r", u_r,         "v_r", v_r,         "w_r", w_r)
-        # print("g_n", wind.item(3), "g_e", wind.item(4), "g_d", wind.item(5))
-
         self._Va = m.sqrt(u_r**2 + v_r**2 + w_r**2)
-        # print(self._Va)
-
         
         # compute angle of attack      
         self._alpha = np.arctan2(w_r,u_r)        
@@ -260,7 +255,7 @@ class mav_dynamics:
         # C_D_delta_e = 0.0
 
         fx = 2*mass*g*(e1*e3-e2*e0) + .5*rho*Va**2*S*(C_X_alpha+C_X_q_alpha*c*q/2/Va  + C_X_delta_e_alpha*delta[0] )
-        fy = 2*mass*g*(e2*e3+e1*e0) + .5*rho*Va**2*S*(MAV.C_Y_0 + MAV.C_Y_beta*self._beta + MAV.C_Y_p*MAV.b*self._state[12]/2/Va + MAV.C_Y_r*MAV.b/2/Va +MAV.C_Y_delta_a*delta[2] + MAV.C_Y_delta_r*delta[3] )
+        fy = 2*mass*g*(e2*e3+e1*e0) + .5*rho*Va**2*S*(MAV.C_Y_0 + MAV.C_Y_beta*self._beta + MAV.C_Y_p*MAV.b*self._state[10]/2/Va + MAV.C_Y_r*MAV.b*self._state[12]/2/Va +MAV.C_Y_delta_a*delta[2] + MAV.C_Y_delta_r*delta[3] )
         fz = mass*g*(e3**2+e0**2-e1**2-e2**2) + .5*rho*Va**2*S*(C_Z_alpha + C_Z_q_alpha*c*self._state[11]/2/Va + C_Z_delta_e_alpha*delta[0])
 
         C_Y_0 = MAV.C_Y_0
@@ -280,7 +275,7 @@ class mav_dynamics:
         C_n_p = MAV.C_n_p
         C_n_r = MAV.C_n_r
         C_n_delta_a = MAV.C_n_delta_a
-        C_n_delta_r = -MAV.C_n_delta_r
+        C_n_delta_r = MAV.C_n_delta_r
         C_m_0 = MAV.C_m_0
         C_m_alpha = MAV.C_m_alpha
         C_m_q = MAV.C_m_q
@@ -321,10 +316,12 @@ class mav_dynamics:
         Cr_delta_r = T4*C_ell_delta_r + T8*C_n_delta_r
 
 
-        Mx = .5*rho*Va**2*S*b*(Cp_o + Cp_beta*self._beta + Cp_p*b*p/2/Va + Cp_r*b*r/2/Va + Cp_delta_a*delta[2] + Cp_delta_r*delta[3])
+        Mx = .5*rho*Va**2*S*b*(C_ell_0 + C_ell_beta*self._beta + C_ell_p*b*p/2/Va + C_ell_r*b*r/2/Va + C_ell_delta_a*delta[2] + C_ell_r*delta[3])
         My = .5*rho*Va**2*S*c*(C_m_0 + C_m_alpha*self._alpha + C_m_q*c*q/2/Va +C_m_delta_e*delta[0])/jy
-        Mz = .5*rho*Va**2*S*b*(Cr_o + Cr_beta*self._beta + Cr_p*b*p/2/Va + Cr_r*b*r/2/Va + Cr_delta_a*delta[2] + Cr_delta_r*delta[3] )
-       
+        Mz = .5*rho*Va**2*S*b*(C_n_0 + C_n_beta*self._beta + C_n_p*b*p/2/Va + C_n_r*b*r/2/Va + C_n_delta_a*delta[2] + C_n_delta_r*delta[3] )
+
+
+
         D = MAV.D_prop
         C_Q2 = MAV.C_Q2  
         C_Q1 = MAV.C_Q1  

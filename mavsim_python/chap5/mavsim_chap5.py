@@ -49,6 +49,7 @@ delta = trim_input  # set input to constant constant trim input
 sim_time = SIM.start_time
 
 # main simulation loop
+print("Starting main loop")
 print("Press Command-Q to exit...")
 while sim_time < SIM.end_time:
 
@@ -69,6 +70,7 @@ while sim_time < SIM.end_time:
     #-------increment time-------------
     sim_time += SIM.ts_simulation
 
+print("Finished")
 # if VIDEO == True:
 #     video.close()
 

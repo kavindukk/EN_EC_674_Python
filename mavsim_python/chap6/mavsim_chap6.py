@@ -9,7 +9,7 @@ sys.path.append('..')
 import numpy as np
 import parameters.simulation_parameters as SIM
 
-from chap2.mav_viewer import mav_viewer
+from chap2.spacecraft_viewer import spacecraft_viewer as mav_viewer
 from chap3.data_viewer import data_viewer
 from chap4.mav_dynamics import mav_dynamics
 from chap4.wind_simulation import wind_simulation
@@ -46,7 +46,7 @@ print("Press Command-Q to exit...")
 while sim_time < SIM.end_time:
 
     #-------controller-------------
-    estimated_state = mav.true_state  # uses true states in the control
+    estimated_state = mav.msg_true_state  # uses true states in the control
     commands.airspeed_command = Va_command.square(sim_time)
     commands.course_command = chi_command.square(sim_time)
     commands.altitude_command = h_command.square(sim_time)
@@ -57,9 +57,9 @@ while sim_time < SIM.end_time:
     mav.update_state(delta, current_wind)  # propagate the MAV dynamics
 
     #-------update viewer-------------
-    mav_view.update(mav.true_state)  # plot body of MAV
-    data_view.update(mav.true_state, # true states
-                     mav.true_state, # estimated states
+    mav_view.update(mav.msg_true_state)  # plot body of MAV
+    data_view.update(mav.msg_true_state, # true states
+                     mav.msg_true_state, # estimated states
                      commanded_state, # commanded states
                      SIM.ts_simulation)
     if VIDEO == True: video.update(sim_time)

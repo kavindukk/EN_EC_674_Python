@@ -12,9 +12,6 @@ import math
 
 # load message types
 from message_types.msg_state import msg_state
-
-from chap3.equations import equations
-
 import parameters.aerosonde_parameters as MAV
 from tools.tools import Quaternion2Euler, Inertial2Body, Body2Inertia
 

@@ -31,10 +31,10 @@ class autopilot:
                         ki=AP.sideslip_ki,
                         Ts=ts_control,
                         limit=np.radians(45))
-        self.yaw_damper = transfer_function(
-                        num=np.array([[AP.yaw_damper_kp, 0]]),
-                        den=np.array([[1, 1/AP.yaw_damper_tau_r]]),
-                        Ts=ts_control)
+        # self.yaw_damper = transfer_function(
+        #                 num=np.array([[AP.yaw_damper_kp, 0]]),
+        #                 den=np.array([[1, 1/AP.yaw_damper_tau_r]]),
+        #                 Ts=ts_control)
 
         # instantiate lateral controllers
         self.pitch_from_elevator = pd_control_with_rate(
@@ -61,10 +61,11 @@ class autopilot:
         delta_r = self.sideslip_from_rudder.update(0, state.beta)
 
         # longitudinal autopilot
-        h_c = cmd.altitude_command
+        h_c = self.saturate(cmd.altitude_command, state.h-AP.altitude_zone, state.h + AP.altitude_zone)
         theta_c = self.altitude_from_pitch.update(h_c, state.h)
         delta_e = self.pitch_from_elevator.update(theta_c, state.theta, state.q)
-        delta_t = self.airspeed_from_throttle.update(cmd.airspeed_command, state.Vg)
+        delta_t = self.airspeed_from_throttle.update(cmd.airspeed_command, state.Va)
+        delta_t = self.saturate(delta_t, 0.0, 1.0)
 
         # construct output and commanded states
         delta = np.array([[delta_e], [delta_a], [delta_r], [delta_t]])

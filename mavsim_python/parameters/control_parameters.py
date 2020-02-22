@@ -32,7 +32,7 @@ K_theta_DC = pitch_kp*TF.a_theta_3/(TF.a_theta_2 + pitch_kp*TF.a_theta_3)
 #----------altitude loop-------------
 altitude_kp = 0.9723
 altitude_ki = 0.06876
-altitude_zone = 1000
+altitude_zone = 10
 
 #---------airspeed hold using throttle---------------
 airspeed_throttle_kp = (TF.a_v1 - 2*.707*1)/K_theta_DC/MAV.gravity

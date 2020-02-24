@@ -9,7 +9,7 @@ import numpy as np
 sys.path.append('..')
 
 class pid_control:
-    def __init__(self, kp=0.0, ki=0.0, kd=0.0, Ts=0.01, sigma=0.05, limit=1.0):
+    def __init__(self, kp=0.0, ki=0.0, kd=0.0, Ts=0.01, sigma=0.05, limit=1.0, throttle_flag=False):
         self.kp = kp
         self.ki = ki
         self.kd = kd
@@ -18,6 +18,7 @@ class pid_control:
         self.integrator = 0.0
         self.error_delay_1 = 0.0
         self.error_dot_delay_1 = 0.0
+        self.throttle_flag = throttle_flag
         # gains for differentiator
         self.a1 = (2.0 * sigma - Ts) / (2.0 * sigma + Ts)
         self.a2 = 2.0 / (2.0 * sigma + Ts)
@@ -26,7 +27,9 @@ class pid_control:
         if reset_flag == True:
             self.integrator = 0.0
             self.error_delay_1 = 0.0
-            self.error_dot_delay_1 =0.0
+            self.y_dot = 0.0
+            self.y_delay_1 = 0.0
+            self.y_dot_delay_1 = 0.0
         #compute the error
         error = y_ref - y
         #update the integrator with trapazoidal rule
@@ -69,73 +72,16 @@ class pid_control:
     def _saturate(self, u):
         # saturate u at +- self.limit
         if u >= self.limit:
-            u_sat = self.limit
+            u_sat = self.limit       
         elif u <= -self.limit:
-            u_sat = -self.limit
+            if self.throttle_flag==True:
+                u_sat=0
+            else:
+                u_sat = -self.limit
         else:
-            u_sat = u
+            if self.throttle_flag==True and u<0:
+                u_sat=0
+            else:
+                u_sat = u
         return u_sat
 
-class pi_control:
-    def __init__(self, kp=0.0, ki=0.0, Ts=0.01, limit=1.0):
-        self.kp = kp
-        self.ki = ki
-        self.Ts = Ts
-        self.limit = limit
-        self.integrator = 0.0
-        self.error_delay_1 = 0.0
-
-    def update(self, y_ref, y):
-        #compute the error
-        error = y_ref - y
-        #update the integrator with trapazoidal rule
-        self.integrator = self.integrator + (self.Ts/2)*(error + self.error_delay_1)
-        #PI control
-        u = self.kp*error + self.ki*self.integrator
-        #saturate PID control at limit
-        u_sat = self._saturate(u)
-        #integral anti-windup
-        #adjust integrator to keep u out of saturation
-        if np.abs(self.ki)>0.0001:
-            self.integrator = self.integrator + (self.Ts/self.ki)*(u_sat - u)
-            #update the delayed variables
-        self.error_delay_1 = error
-        # self.error_dot_delay_1 = error_dot
-        return u_sat
-
-    def _saturate(self, u):
-        # saturate u at +- self.limit
-        if u >= self.limit:
-            u_sat = self.limit
-        elif u <= -self.limit:
-            u_sat = -self.limit
-        else:
-            u_sat = u
-        return u_sat
-
-class pd_control_with_rate:
-    # PD control with rate information
-    # u = kp*(yref-y) - kd*ydot
-    def __init__(self, kp=0.0, kd=0.0, limit=1.0):
-        self.kp = kp
-        self.kd = kd
-        self.limit = limit
-
-    def update(self, y_ref, y, ydot):
-        #compute the error
-        error = y_ref - y
-        #PD control
-        u = self.kp*error - self.kd*ydot
-        #saturate PD control at limit
-        u_sat = self._saturate(u)
-        return u_sat
-
-    def _saturate(self, u):
-        # saturate u at +- self.limit
-        if u >= self.limit:
-            u_sat = self.limit
-        elif u <= -self.limit:
-            u_sat = -self.limit
-        else:
-            u_sat = u
-        return u_sat

@@ -16,6 +16,9 @@ from chap4.wind_simulation import wind_simulation
 from chap6.autopilot import autopilot
 from tools.signals import signals
 
+from chap5.trim import compute_trim 
+# import numpy as np
+
 # initialize the visualization
 VIDEO = False  # True==write video, False==don't write video
 mav_view = mav_viewer()  # initialize the mav viewer
@@ -30,6 +33,7 @@ if VIDEO == True:
 wind = wind_simulation(SIM.ts_simulation)
 mav = mav_dynamics(SIM.ts_simulation)
 ctrl = autopilot(SIM.ts_simulation)
+# trim_state, trim_input = compute_trim(mav, 25, 10.*np.pi/180)
 
 # autopilot commands
 from message_types.msg_autopilot import msg_autopilot
@@ -54,7 +58,9 @@ while sim_time < SIM.end_time:
 
     #-------physical system-------------
     current_wind = wind.update()  # get the new wind vector
+    # input = np.array([[trim_input.item(0)], [trim_input.item(1)], [trim_input.item(2)], [trim_input.item(3)] ]).T
     mav.update_state(delta, current_wind)  # propagate the MAV dynamics
+    # mav.update_state(trim_input, current_wind)  # propagate the MAV dynamics
 
     #-------update viewer-------------
     mav_view.update(mav.msg_true_state)  # plot body of MAV

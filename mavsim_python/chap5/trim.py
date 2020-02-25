@@ -65,8 +65,8 @@ def trim_objective(x, mav, Va, gamma):
     # tef = x_dot - f_changed
     # J = np.linalg.norm(tef)
 
-    state = x[0:13]
-    delta = x[13:17]
+    state = np.array([x[0:13]]).T
+    delta = np.array([x[13:17]]).T
     x_dot = np.array([0, 0, Va * np.sin(gamma), 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
     mav._state = state
     mav._update_velocity_data()

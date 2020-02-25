@@ -28,5 +28,5 @@ a_v1 = rho*Va*S*(MAV.C_D_0 + MAV.C_D_alpha*4.4*np.pi/180 +
                  MAV.C_D_delta_e*.95) + rho*S*MAV.C_prop*Va/mass
 a_v2 = rho*S*MAV.C_prop*((MAV.k_motor/100)**2)*0.95/mass
 
-# print(a_v1)
-# print(a_v2)
+
+

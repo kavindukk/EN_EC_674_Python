@@ -26,15 +26,15 @@ class autopilot:
                         ki=AP.course_ki,
                         Ts=ts_control,
                         limit=np.radians(30))
-        self.sideslip_from_rudder = pid_control(
-                        kp=AP.sideslip_kp,
-                        ki=AP.sideslip_ki,
-                        Ts=ts_control,
-                        limit=np.radians(45))
-        # self.yaw_damper = transfer_function(
-        #                 num=np.array([[AP.yaw_damper_kp, 0]]),
-        #                 den=np.array([[1, 1/AP.yaw_damper_tau_r]]),
-        #                 Ts=ts_control)
+        # self.sideslip_from_rudder = pid_control(
+        #                 kp=AP.sideslip_kp,
+        #                 ki=AP.sideslip_ki,
+        #                 Ts=ts_control,
+        #                 limit=np.radians(45))
+        self.yaw_damper = transfer_function(
+                        num=np.array([[AP.yaw_damper_kp, 0]]),
+                        den=np.array([[1, 1/AP.yaw_damper_tau_r]]),
+                        Ts=ts_control)
 
         # instantiate lateral controllers
         self.pitch_from_elevator = pid_control(
@@ -59,7 +59,8 @@ class autopilot:
         phi_c = self.course_from_roll.update(cmd.course_command, state.chi, reset_flag=True)
         delta_a = self.roll_from_aileron.update_with_rate(phi_c, state.phi, state.p)
         delta_a = np.asscalar(delta_a)
-        delta_r = self.sideslip_from_rudder.update(0, state.beta)
+        # delta_r = self.sideslip_from_rudder.update(0, state.beta)
+        delta_r = self.yaw_damper.update(state.r)
 
         # longitudinal autopilot
         h_c = self.saturate(cmd.altitude_command, state.h-AP.altitude_zone, state.h + AP.altitude_zone)
@@ -67,7 +68,7 @@ class autopilot:
         delta_e = self.pitch_from_elevator.update_with_rate(theta_c, state.theta, state.q)
         delta_e = np.asscalar(delta_e)
         delta_t = self.airspeed_from_throttle.update(cmd.airspeed_command, state.Va)
-        delta_t = self.saturate(delta_t, 0.0, 1.0)
+        delta_t = self.saturate(delta_t, 0.0, 1)
 
         # construct output and commanded states
         # delta = np.array([[delta_e], [delta_a], [delta_r], [delta_t]]) 

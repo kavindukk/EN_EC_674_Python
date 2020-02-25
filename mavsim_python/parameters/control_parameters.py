@@ -27,14 +27,14 @@ course_kp = 2.*zeta_chi*wn_chi*Va0/gravity
 course_ki = wn_chi**2.*Va0/gravity
 
 # #----------sideslip loop-------------
-dr_max = 45
-re_max = 15
-zeta_beta = 0.707
-a_beta_1 = -0.43
-a_beta_2 = -0.7
-sideslip_kp = dr_max/re_max
-wn_beta = (a_beta_1+a_beta_2*sideslip_kp)/2/zeta_beta
-sideslip_ki = wn_beta**2./a_beta_2
+# dr_max = 45
+# re_max = 15
+# zeta_beta = 0.707
+# a_beta_1 = -0.43
+# a_beta_2 = -0.7
+# sideslip_kp = dr_max/re_max
+# wn_beta = (a_beta_1+a_beta_2*sideslip_kp)/2/zeta_beta
+# sideslip_ki = wn_beta**2./a_beta_2
 
 # #----------yaw damper-------------
 yaw_damper_tau_r = 0.01
@@ -62,12 +62,12 @@ altitude_ki = (wn_h**2.)/(K_theta_DC*Va0)
 altitude_zone = 10
 
 # #---------airspeed hold using throttle---------------
-wn_v = 100
-zeta_v = 5  # 707
-a_v_1 = 0.0314
-a_v_2 = 1.5
+wn_v = 10
+zeta_v = .707  # 707
+a_v_1 = .6607#0.0314
+a_v_2 = 47.02#1.5
 
-airspeed_throttle_kp = (2.*zeta_v*wn_v-a_v_1)/a_v_2
+airspeed_throttle_kp = -(2.*zeta_v*wn_v-a_v_1)/a_v_2
 airspeed_throttle_ki = wn_v**2./a_v_2
 
 

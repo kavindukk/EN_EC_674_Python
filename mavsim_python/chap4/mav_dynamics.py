@@ -263,7 +263,8 @@ class mav_dynamics:
         #Propeller Model in slides-----------
 
         a = rho*np.power(D,5)*C_Q0/(2*np.pi)**2
-        b = rho*np.power(D,4)*C_Q1*self._Va/(2*np.pi) + KQ*K_V/R
+        # b = rho*np.power(D,4)*C_Q1*self._Va/(2*np.pi) + KQ*K_V/R
+        b = rho*np.power(D,4)*C_Q1*self._Va/(2*np.pi) + KQ**2/R
         c = rho*np.power(D,3)*C_Q2*(self._Va)**2 - KQ*V_in/R + KQ_i0
 
         omega_op = (-b + np.sqrt(b**2 - 4*a*c))/(2*a)

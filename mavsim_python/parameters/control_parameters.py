@@ -11,7 +11,7 @@ Va0 = 15
 # #----------roll loop-------------
 da_max = 45
 ae_max = 15
-wn_phi = 11
+wn_phi = 7
 zeta_phi = 0.707
 a_phi_1 = 7.872
 a_phi_2 = 30.075
@@ -21,7 +21,7 @@ roll_kd = (2.*zeta_phi*wn_phi-a_phi_1)/a_phi_2
 
 # #----------course loop-------------
 zeta_chi = 0.707
-wn_chi = 0.5
+wn_chi = 1.5#0.5
 
 course_kp = 2.*zeta_chi*wn_chi*Va0/gravity
 course_ki = wn_chi**2.*Va0/gravity
@@ -41,8 +41,8 @@ yaw_damper_tau_r = 0.01
 yaw_damper_kp = 0.01
 
 # #----------pitch loop-------------
-wn_theta = 15
-zeta_theta = 0.8
+wn_theta = 25
+zeta_theta = 0.707
 
 a_theta_1 = 0.3392
 a_theta_2 = 6.4094
@@ -62,10 +62,10 @@ altitude_ki = (wn_h**2.)/(K_theta_DC*Va0)
 altitude_zone = 10
 
 # #---------airspeed hold using throttle---------------
-wn_v = 10
-zeta_v = .707  # 707
-a_v_1 = .6607#0.0314
-a_v_2 = 47.02#1.5
+wn_v = 15
+zeta_v = .4  # 707
+a_v_1 =  0.0314 # .0314 0.6607
+a_v_2 = 1.5  # 1.5 47.02
 
 airspeed_throttle_kp = -(2.*zeta_v*wn_v-a_v_1)/a_v_2
 airspeed_throttle_ki = wn_v**2./a_v_2

@@ -4,3 +4,5 @@ mavsim_python/.vscode
 mavsim_python/venv
 mavsim_matlab
 mavsim_simulink
+.idea
+venv

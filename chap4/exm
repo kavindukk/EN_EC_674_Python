@@ -1,0 +1,14 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.integrate import odeint, solve_ivp
+def linfunc(t, x):
+    A = np.array([[0., 1.], [-1., -0.3]])
+    xd = A@x
+    return xd
+sol_b = solve_ivp(linfunc, (0., -20.), np.array([2., 2.]), max_step=.01)
+sol_f = solve_ivp(linfunc, (0., 20.), np.array([2., 2.]), max_step=.01)
+sol = np.concatenate([sol_b.y, sol_f.y])
+print(sol)
+plt.figure()
+plt.plot(sol[0], sol[1])
+plt.show()

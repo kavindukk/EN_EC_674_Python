@@ -1,0 +1,25 @@
+import numpy as np
+import math as m
+root = m.sqrt
+
+Lu, Lv, Lw =200, 200, 50
+sigma_u, sigma_v  = 1.06, 1.06
+sigma_w = .7
+V_a = 20
+
+c_u = sigma_u*root(2*V_a/Lu/np.pi)
+c_v = sigma_v*root(3*V_a/Lv/np.pi)
+c_w = sigma_w*root(3*V_a/Lw/np.pi)
+
+a_1 = c_u
+b_1 = V_a/Lu
+a_2 = c_v
+a_3 = c_v*V_a/Lv/root(3)
+b_2 = V_a/Lv
+a_4 = c_w
+a_5 = c_w*V_a/Lw/root(3)
+b_3 = V_a/Lw
+
+params = [a_1, b_1, a_2, a_3, b_2, a_4, a_5, b_3 ]
+
+print(params)

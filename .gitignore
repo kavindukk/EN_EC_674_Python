@@ -7,3 +7,12 @@ mavsim_simulink
 .idea
 venv
 mavsim_python
+chap2/__pycache__
+chap3/__pycache__
+chap4/__pycache__
+chap5/__pycache__
+chap6/__pycache__
+message_types/__pycache__
+parameters/__pycache__
+state_plotter/__pycache__
+tools/__pycache__

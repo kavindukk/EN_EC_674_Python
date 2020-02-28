@@ -56,7 +56,7 @@ class autopilot:
 
     def update(self, cmd, state):
         # lateral autopilot
-        cmd.course_command= wrap(cmd.course_command, 0)        
+        # cmd.course_command= wrap(cmd.course_command, state.chi)        
         # phi_c = self.course_from_roll.update(cmd.course_command, state.chi, reset_flag=True)
         phi_c = self.course_from_roll.update(cmd.course_command, state.chi)
         delta_a = self.roll_from_aileron.update_with_rate(phi_c, state.phi, state.p)
@@ -80,6 +80,7 @@ class autopilot:
         self.commanded_state.phi = phi_c
         self.commanded_state.theta = theta_c
         self.commanded_state.chi = cmd.course_command
+        
         return delta, self.commanded_state
 
     def saturate(self, input, low_limit, up_limit):

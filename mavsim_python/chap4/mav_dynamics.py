@@ -150,21 +150,21 @@ class mav_dynamics:
         # compute airspeed        
         phi, theta, psi = Quaternion2Euler(self._state[6:10])
        
-        #Wnb = Inertial2Body(phi, theta, psi, wind.item(0), wind.item(1), wind.item(2))[0]
-        #Web = Inertial2Body(phi, theta, psi, wind.item(0), wind.item(1), wind.item(2))[1]
-        #Wdb = Inertial2Body(phi, theta, psi, wind.item(0), wind.item(1), wind.item(2))[2]
+        Wnb = Inertial2Body(phi, theta, psi, wind.item(0), wind.item(1), wind.item(2))[0]
+        Web = Inertial2Body(phi, theta, psi, wind.item(0), wind.item(1), wind.item(2))[1]
+        Wdb = Inertial2Body(phi, theta, psi, wind.item(0), wind.item(1), wind.item(2))[2]
 
         u = self._state[3]
         v = self._state[4] 
         w = self._state[5]
 
-        #u_w = Wnb+wind.item(3)
-        #v_w = Web+wind.item(4)
-        #w_w = Wdb+wind.item(5) 
+        u_w = Wnb+wind.item(3)
+        v_w = Web+wind.item(4)
+        w_w = Wdb+wind.item(5) 
 
-        u_r = u #- u_w
-        v_r = v #- v_w
-        w_r = w #- w_w
+        u_r = u - u_w
+        v_r = v - v_w
+        w_r = w - w_w
 
         self._Va = math.sqrt(u_r**2 + v_r**2 + w_r**2)
         

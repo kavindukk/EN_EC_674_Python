@@ -102,16 +102,30 @@ class mav_dynamics:
 
     def update_sensors(self):
         "Return value of sensors on MAV: gyros, accels, static_pressure, dynamic_pressure, GPS"
-        self.sensors.gyro_x =
-        self.sensors.gyro_y =
-        self.sensors.gyro_z =
-        self.sensors.accel_x =
-        self.sensors.accel_y =
-        self.sensors.accel_z =
-        self.sensors.static_pressure =
-        self.sensors.diff_pressure =
+        # Rate Gyros
+        p = self._state.item(10)
+        q = self._state.item(11)
+        r = self._state.item(12)
+        self.sensors.gyro_x = p + np.random.normal(scale=SENSOR.gyro_sigma) + SENSOR.gyro_x_bias
+        self.sensors.gyro_y = q + np.random.normal(scale=SENSOR.gyro_sigma) + SENSOR.gyro_y_bias
+        self.sensors.gyro_z = r + np.random.normal(scale=SENSOR.gyro_sigma) + SENSOR.gyro_z_bias
+
+        # Accelerometers
+        forces = self._forces_moments(self.delta)
+        phi, theta, psi = Quaternion2Euler([self._state.item(6), self._state.item(7), self._state.item(8), self._state.item(9)])
+        m, g =MAV.mass, MAV.gravity
+        self.sensors.accel_x = forces.item(0)/m + g*np.sin(theta) +  np.random.normal(scale=SENSOR.accel_sigma)
+        self.sensors.accel_y = forces.item(1)/m -g*np.cos(theta)*np.sin(phi) +  np.random.normal(scale=SENSOR.accel_sigma)
+        self.sensors.accel_z = forces.item(2)/m -g*np.cos(theta)*np.cos(phi) +  np.random.normal(scale=SENSOR.accel_sigma)
+
+        # Static Pressure Sensor
+        h_ASL = -self.state.item(2)        
+        self.sensors.static_pressure = MAV.rho*g*h_ASL + np.random.normal(scale=SENSOR.static_pres_sigma)
+        # Differencial Presssure Sensor        
+        self.sensors.diff_pressure = 0.5*MAV.rho*(self._Va)**2 + np.random.normal(scale=SENSOR.diff_pres_sigma)
+
         if self._t_gps >= SENSOR.ts_gps:
-            self._gps_eta_n =
+            self._gps_eta_n = 
             self._gps_eta_e =
             self._gps_eta_h =
             self.sensors.gps_n =

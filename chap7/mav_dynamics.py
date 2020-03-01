@@ -56,6 +56,12 @@ class mav_dynamics:
         self._gps_eta_n = 0.
         self._gps_eta_e = 0.
         self._gps_eta_h = 0.
+        self.sensors.gps_n = MAV.pn0
+        self.sensors.gps_e = MAV.pe0
+        self.sensors.gps_h = -MAV.pd0
+        self.sensors.gps_Vg = 
+        self.sensors.gps_course =
+        self._t_gps = 0.
         # timer so that gps only updates every ts_gps seconds
         self._t_gps = 999.  # large value ensures gps updates at initial time.
         # initialize true_state message
@@ -124,15 +130,18 @@ class mav_dynamics:
         # Differencial Presssure Sensor        
         self.sensors.diff_pressure = 0.5*MAV.rho*(self._Va)**2 + np.random.normal(scale=SENSOR.diff_pres_sigma)
 
-        if self._t_gps >= SENSOR.ts_gps:
-            self._gps_eta_n = 
-            self._gps_eta_e =
-            self._gps_eta_h =
-            self.sensors.gps_n =
-            self.sensors.gps_e =
-            self.sensors.gps_h =
-            self.sensors.gps_Vg =
-            self.sensors.gps_course =
+        if self._t_gps >= SENSOR.ts_gps:            
+            self._gps_eta_n = np.exp(-SENSOR.gps_k*SENSOR.ts_gps)*self._gps_eta_n + np.random.normal(scale=SENSOR.gps_n_sigma)
+            self._gps_eta_e = np.exp(-SENSOR.gps_k*SENSOR.ts_gps)*self._gps_eta_e + np.random.normal(scale=SENSOR.gps_e_sigma)
+            self._gps_eta_h = np.exp(-SENSOR.gps_k*SENSOR.ts_gps)*self._gps_eta_h + np.random.normal(scale=SENSOR.gps_h_sigma)
+            self.sensors.gps_n = self._state.item(0) + self._gps_eta_n
+            self.sensors.gps_e = self._state.item(1) + self._gps_eta_e
+            self.sensors.gps_h = self._state.item(2) + self._gps_eta_h
+            # V_a and course measurements
+            Va = self._Va
+            w_n, w_e, w_d = self._wind.item(0), self._wind.item(1), self._wind.item(3)
+            self.sensors.gps_Vg = np.sqrt( (Va*np.cos(psi)+w_n)**2  + (Va*np.sin(psi)+w_e)**2 ) + np.random.normal(scale=SENSOR.gps_Vg_sigma)                                                     )
+            self.sensors.gps_course = np.arctan2( Va*np.sin(psi)+w_e, Va*np.cos(psi)+w_n  ) + np.random.normal(scale=SENSOR.gps_course_sigma)
             self._t_gps = 0.
         else:
             self._t_gps += self._ts_simulation

@@ -29,3 +29,4 @@ gps_e_sigma = 0.21
 gps_h_sigma = 0.40
 gps_Vg_sigma = 0.05
 gps_course_sigma = gps_Vg_sigma / 10
+gps_k = 1. / 1100.

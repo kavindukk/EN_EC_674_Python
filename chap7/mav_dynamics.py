@@ -18,7 +18,7 @@ from message_types.msg_sensors import msg_sensors
 
 import parameters.aerosonde_parameters as MAV
 import parameters.sensor_parameters as SENSOR
-from tools.rotations import Quaternion2Rotation, Quaternion2Euler
+from tools.rotations import  Quaternion2Euler, Inertial2Body# Quaternion2Rotation,
 
 class mav_dynamics:
     def __init__(self, Ts):
@@ -55,13 +55,7 @@ class mav_dynamics:
         # random walk parameters for GPS
         self._gps_eta_n = 0.
         self._gps_eta_e = 0.
-        self._gps_eta_h = 0.
-        self.sensors.gps_n = MAV.pn0
-        self.sensors.gps_e = MAV.pe0
-        self.sensors.gps_h = -MAV.pd0
-        self.sensors.gps_Vg = 
-        self.sensors.gps_course =
-        self._t_gps = 0.
+        self._gps_eta_h = 0.       
         # timer so that gps only updates every ts_gps seconds
         self._t_gps = 999.  # large value ensures gps updates at initial time.
         # initialize true_state message
@@ -70,7 +64,7 @@ class mav_dynamics:
     ###################################
     # public functions
     def update_state(self, delta, wind):
-         '''
+        '''
             Integrate the differential equations defining dynamics, update sensors
             delta = (delta_a, delta_e, delta_r, delta_t) are the control inputs
             wind is the wind vector in inertial coordinates
@@ -101,12 +95,14 @@ class mav_dynamics:
 
         # update the airspeed, angle of attack, and side slip angles using new state
         self._update_velocity_data(wind)
-
         # update the message class for the true state
-        self._update_msg_true_state()
+        self._update_true_state()
+        # update the sensor data
+        # self.update_sensors(forces_moments)
 
 
-    def update_sensors(self):
+
+    def update_sensors(self,delta):
         "Return value of sensors on MAV: gyros, accels, static_pressure, dynamic_pressure, GPS"
         # Rate Gyros
         p = self._state.item(10)
@@ -117,7 +113,7 @@ class mav_dynamics:
         self.sensors.gyro_z = r + np.random.normal(scale=SENSOR.gyro_sigma) + SENSOR.gyro_z_bias
 
         # Accelerometers
-        forces = self._forces_moments(self.delta)
+        forces = self._forces_moments(delta)
         phi, theta, psi = Quaternion2Euler([self._state.item(6), self._state.item(7), self._state.item(8), self._state.item(9)])
         m, g =MAV.mass, MAV.gravity
         self.sensors.accel_x = forces.item(0)/m + g*np.sin(theta) +  np.random.normal(scale=SENSOR.accel_sigma)
@@ -125,7 +121,7 @@ class mav_dynamics:
         self.sensors.accel_z = forces.item(2)/m -g*np.cos(theta)*np.cos(phi) +  np.random.normal(scale=SENSOR.accel_sigma)
 
         # Static Pressure Sensor
-        h_ASL = -self.state.item(2)        
+        h_ASL = -self._state.item(2)        
         self.sensors.static_pressure = MAV.rho*g*h_ASL + np.random.normal(scale=SENSOR.static_pres_sigma)
         # Differencial Presssure Sensor        
         self.sensors.diff_pressure = 0.5*MAV.rho*(self._Va)**2 + np.random.normal(scale=SENSOR.diff_pres_sigma)
@@ -136,11 +132,11 @@ class mav_dynamics:
             self._gps_eta_h = np.exp(-SENSOR.gps_k*SENSOR.ts_gps)*self._gps_eta_h + np.random.normal(scale=SENSOR.gps_h_sigma)
             self.sensors.gps_n = self._state.item(0) + self._gps_eta_n
             self.sensors.gps_e = self._state.item(1) + self._gps_eta_e
-            self.sensors.gps_h = self._state.item(2) + self._gps_eta_h
+            self.sensors.gps_h = -self._state.item(2) + self._gps_eta_h
             # V_a and course measurements
             Va = self._Va
-            w_n, w_e, w_d = self._wind.item(0), self._wind.item(1), self._wind.item(3)
-            self.sensors.gps_Vg = np.sqrt( (Va*np.cos(psi)+w_n)**2  + (Va*np.sin(psi)+w_e)**2 ) + np.random.normal(scale=SENSOR.gps_Vg_sigma)                                                     )
+            w_n, w_e, w_d = self._wind.item(0), self._wind.item(1), self._wind.item(2)
+            self.sensors.gps_Vg = np.sqrt( (Va*np.cos(psi)+w_n)**2  + (Va*np.sin(psi)+w_e)**2 ) + np.random.normal(scale=SENSOR.gps_Vg_sigma)                                                    
             self.sensors.gps_course = np.arctan2( Va*np.sin(psi)+w_e, Va*np.cos(psi)+w_n  ) + np.random.normal(scale=SENSOR.gps_course_sigma)
             self._t_gps = 0.
         else:

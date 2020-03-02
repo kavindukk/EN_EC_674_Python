@@ -38,7 +38,7 @@ class msg_sensors:
         self.mag_x = 0  # magnetic field along body x axis
         self.mag_y = 0  # magnetic field along body y axis
         self.mag_z = 0  # magnetic field along body z axis
-        self.abs_pressure = 0  # absolute pressure
+        self.static_pressure = 0  # absolute pressure
         self.diff_pressure = 0  # differential pressure
         self.gps_n = 0  # gps north
         self.gps_e = 0  # gps east

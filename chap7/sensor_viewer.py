@@ -19,7 +19,7 @@ class sensor_viewer:
         gyro_z_plots = PlotboxArgs(plots=['gyro_z'],
                                    labels={'left': 'gyro_z(m/s)', 'bottom': 'Time (s)'},
                                    time_window=time_window_length)
-        abs_pressure_plots = PlotboxArgs(plots=['absolute_pressure'],
+        abs_pressure_plots = PlotboxArgs(plots=['static_pressure'],
                                             labels={'left': 'pressure(Pa)', 'bottom': 'Time (s)'},
                                             time_window=time_window_length)
 
@@ -71,7 +71,7 @@ class sensor_viewer:
         self.plotter.add_plotboxes(plots)
         # Define and label vectors for more convenient/natural data input
         self.plotter.define_input_vector('sensors', ['gyro_x', 'gyro_y', 'gyro_z',
-                                                     'abs_pressure',
+                                                     'static_pressure',
                                                      'accel_x', 'accel_y', 'accel_z',
                                                      'diff_pressure',
                                                      'gps_n', 'gps_e', 'gps_h',
@@ -83,7 +83,7 @@ class sensor_viewer:
         ## Add the sensors data in vectors
         # the order has to match the order in lines 72-76
         sensor_list = [sensors.gyro_x, sensors.gyro_y, sensors.gyro_z,
-                       sensors.abs_pressure, sensors.accel_x, sensors.accel_y,
+                       sensors.static_pressure, sensors.accel_x, sensors.accel_y,
                        sensors.accel_z, sensors.diff_pressure, sensors.gps_n,
                        sensors.gps_e, sensors.gps_h, sensors.gps_Vg,
                        sensors.gps_course]

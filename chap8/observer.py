@@ -10,6 +10,7 @@ sys.path.append('..')
 import parameters.control_parameters as CTRL
 import parameters.simulation_parameters as SIM
 import parameters.sensor_parameters as SENSOR
+import parameters.aerosonde_parameters as MAV
 from tools.rotations import Euler2Rotation
 from tools.wrap import wrap
 
@@ -37,13 +38,13 @@ class observer:
     def update(self, measurements):
 
         # estimates for p, q, r are low pass filter of gyro minus bias estimate
-        self.estimated_state.p =
-        self.estimated_state.q =
-        self.estimated_state.r =
+        self.estimated_state.p = self.lpf_gyro_x.update(measurements.gyro_x)
+        self.estimated_state.q = self.lpf_gyro_y.update(measurements.gyro_y)
+        self.estimated_state.r = self.lpf_gyro_z.update(measurements.gyro_z)
 
         # invert sensor model to get altitude and airspeed
-        self.estimated_state.h =
-        self.estimated_state.Va =
+        self.estimated_state.h = self.lpf_static.update(measurements.static_pressure)/MAV.rho/MAV.gravity
+        self.estimated_state.Va = np.sqrt(2*self.lpf_diff.update(measurements.diff_pressure)/MAV.rho)
 
         # estimate phi and theta with simple ekf
         self.attitude_ekf.update(self.estimated_state, measurements)
@@ -67,7 +68,7 @@ class alpha_filter:
         self.y = y0  # initial condition
 
     def update(self, u):
-        self.y =
+        self.y = self.alpha*self.y + (1-self.alpha)*u
         return self.y
 
 class ekf_attitude:

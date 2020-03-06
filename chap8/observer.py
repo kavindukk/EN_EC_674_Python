@@ -74,12 +74,12 @@ class alpha_filter:
 class ekf_attitude:
     # implement continous-discrete EKF to estimate roll and pitch angles
     def __init__(self):
-        self.Q =
-        self.Q_gyro =
-        self.R_accel =
-        self.N =   # number of prediction step per sample
-        self.xhat =  # initial state: phi, theta
-        self.P =
+        self.Q = 1e-9*np.diag(1,1)
+        self.Q_gyro = SENSOR.gyro_sigma**2*np.diag(1,1,1)
+        self.R_accel = SENSOR.accel_sigma**2*np.diag(1,1,1)
+        self.N = 2  # number of prediction step per sample
+        self.xhat =  np.array([0,0]).T # initial state: phi, theta
+        self.P = np.diag(10,10)
         self.Ts = SIM.ts_control/self.N
 
     def update(self, state, measurement):
@@ -88,21 +88,30 @@ class ekf_attitude:
         state.phi = self.xhat.item(0)
         state.theta = self.xhat.item(1)
 
-    def f(self, x, state):
+    def f(self, x, state):  
         # system dynamics for propagation model: xdot = f(x, u)
-        _f =
+        p,q,r,phi,theta = state.p,state.q, state.r, x.phi, x.theta
+
+        _f = np.array([ p+q*np.sin(phi)*np.tan(theta)+r*np.cos(phi)*np.tan(theta),
+                        q*np.cos(phi)-r*np.sin(phi) ]).T
         return _f
 
     def h(self, x, state):
         # measurement model y
-        _h =
+        g = MAV.gravity
+        p, q, r, phi, theta, Va= state.p, state.q, state.r, x.phi, x.theta, state.Va
+        _h = np.array([
+                    q*Va*np.sin(theta) + MAV.gravity*np.sin(theta),
+                    r*Va*np.cos(theta) - p*Va*np.sin(theta) - g*np.cos(theta)*np.sin(phi),
+                    -q*Va*np.cos(theta) - g*np.cos(theta)*np.cos(phi)
+        ]).T 
         return _h
 
     def propagate_model(self, state):
         # model propagation
         for i in range(0, self.N):
              # propagate model
-            self.xhat =
+            self.xhat = self.xhat + self.Ts*self.f(self.xhat, state)
             # compute Jacobian
             A = jacobian(self.f, self.xhat, state)
             # compute G matrix for gyro noise
@@ -131,11 +140,11 @@ class ekf_attitude:
 class ekf_position:
     # implement continous-discrete EKF to estimate pn, pe, chi, Vg
     def __init__(self):
-        self.Q =
+        self.Q = 
         self.R =
         self.N =   # number of prediction step per sample
         self.Ts = (SIM.ts_control / self.N)
-        self.xhat =
+        self.xhat = 
         self.P =
         self.gps_n_old = 9999
         self.gps_e_old = 9999
@@ -161,7 +170,9 @@ class ekf_position:
 
     def h_gps(self, x, state):
         # measurement model for gps measurements
-        _h =
+        _h =np.array([
+
+        ])
         return _h
 
     def h_pseudo(self, x, state):

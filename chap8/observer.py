@@ -115,14 +115,16 @@ class ekf_attitude:
             # compute Jacobian
             A = jacobian(self.f, self.xhat, state)
             # compute G matrix for gyro noise
-            G =
+            theta,phi = state.theta,state.phi
+            G = np.array([ [1, np.sin(phi)*np.tan(theta), np.cos(phi)*np.tan(theta), 0],
+                            [0, np.cos(phi), -np.sin(phi), 0]  ])
             # update P with continuous time model
-            # self.P = self.P + self.Ts * (A @ self.P + self.P @ A.T + self.Q + G @ self.Q_gyro @ G.T)
+            self.P = self.P + self.Ts * (A @ self.P + self.P @ A.T + self.Q + G @ self.Q_gyro @ G.T)
             # convert to discrete time models
-            A_d =
-            G_d =
+            A_d = np.eye(2) + A*self.Ts + (self.Ts**2)/2*(A@A)
+            G_d = 
             # update P with discrete time model
-            self.P =
+            self.P = A_d @ self.P @ A_d.T + self.Q
 
     def measurement_update(self, state, measurement):
         # measurement updates
@@ -140,12 +142,12 @@ class ekf_attitude:
 class ekf_position:
     # implement continous-discrete EKF to estimate pn, pe, chi, Vg
     def __init__(self):
-        self.Q = 
-        self.R =
-        self.N =   # number of prediction step per sample
+        self.Q = 1e-9*np.diag(1,1,1,1)
+        self.R = 
+        self.N = 2   # number of prediction step per sample
         self.Ts = (SIM.ts_control / self.N)
-        self.xhat = 
-        self.P =
+        self.xhat = np.array([0,0,0,0]).T
+        self.P = np.diag(10,10,10,10)
         self.gps_n_old = 9999
         self.gps_e_old = 9999
         self.gps_Vg_old = 9999

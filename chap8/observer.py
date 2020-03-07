@@ -122,7 +122,7 @@ class ekf_attitude:
             self.P = self.P + self.Ts * (A @ self.P + self.P @ A.T + self.Q + G @ self.Q_gyro @ G.T)
             # convert to discrete time models
             A_d = np.eye(2) + A*self.Ts + (self.Ts**2)/2*(A@A)
-            G_d = 
+            # G_d = 
             # update P with discrete time model
             self.P = A_d @ self.P @ A_d.T + self.Q
 
@@ -134,7 +134,7 @@ class ekf_attitude:
         y = np.array([measurement.accel_x, measurement.accel_y, measurement.accel_z])
         for i in range(0, 3):
             if np.abs(y[i]-h[i,0]) < threshold:
-                Ci =
+                Ci = 
                 L =
                 self.P =
                 self.xhat =
@@ -202,8 +202,8 @@ class ekf_position:
         C = jacobian(self.h_pseudo, self.xhat, state)
         y = np.array([0, 0])
         for i in range(0, 2):
-            Ci =
-            L =
+            Ci = 
+            L = 
             self.P =
             self.xhat =
 
@@ -217,8 +217,8 @@ class ekf_position:
             C = jacobian(self.h_gps, self.xhat, state)
             y = np.array([measurement.gps_n, measurement.gps_e, measurement.gps_Vg, measurement.gps_course])
             for i in range(0, 4):
-                Ci =
-                L =
+                Ci = 
+                L = 
                 self.P =
                 self.xhat =
             # update stored GPS signals

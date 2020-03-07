@@ -19,4 +19,5 @@ tools/__pycache__
 chap7/__pycache__
 parameters/__init__.pyc 
 parameters/simulation_parameters.pyc 
-
+.ipynb_checkpoints/
+Untitled.ipynb

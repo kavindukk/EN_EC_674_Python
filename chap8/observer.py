@@ -131,13 +131,15 @@ class ekf_attitude:
         threshold = 2.0
         h = self.h(self.xhat, state)
         C = jacobian(self.h, self.xhat, state)
-        y = np.array([measurement.accel_x, measurement.accel_y, measurement.accel_z])
-        for i in range(0, 3):
-            if np.abs(y[i]-h[i,0]) < threshold:
-                Ci = 
-                L =
-                self.P =
-                self.xhat =
+        y = np.array([measurement.accel_x, measurement.accel_y, measurement.accel_z]).T
+        S_inv = np.linalg.inv(self.R_accel+ C @ self.P @ C.T)
+        # for i in range(0, 3):
+        if np.abs(y[0]-h[0, 0]) or np.abs(y[1]-h[1, 0]) or np.abs(y[2]-h[2, 0]) < threshold:
+            # Ci = 
+            L = self.P @ C.T @ S_inv
+            I_LC = np.eye(2)-L @ C
+            self.P = I_LC @ self.P @ I_LC.T + L @ self.R_accel @ L.T
+            self.xhat = self.xhat + L @ (y-h)
 
 class ekf_position:
     # implement continous-discrete EKF to estimate pn, pe, chi, Vg

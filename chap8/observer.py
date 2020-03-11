@@ -119,12 +119,12 @@ class ekf_attitude:
             G = np.array([ [1, np.sin(phi)*np.tan(theta), np.cos(phi)*np.tan(theta), 0],
                             [0, np.cos(phi), -np.sin(phi), 0]  ])
             # update P with continuous time model
-            self.P = self.P + self.Ts * (A @ self.P + self.P @ A.T + self.Q + G @ self.Q_gyro @ G.T)
+            # self.P = self.P + self.Ts * (A @ self.P + self.P @ A.T + self.Q + G @ self.Q_gyro @ G.T)
             # convert to discrete time models
             A_d = np.eye(2) + A*self.Ts + (self.Ts**2)/2*(A@A)
             # G_d = 
             # update P with discrete time model
-            self.P = A_d @ self.P @ A_d.T + self.Q
+            self.P = A_d @ self.P @ A_d.T + (self.Q + G @ self.Q_gyro @ G.T)*self.Ts**2 
 
     def measurement_update(self, state, measurement):
         # measurement updates
@@ -144,11 +144,11 @@ class ekf_attitude:
 class ekf_position:
     # implement continous-discrete EKF to estimate pn, pe, chi, Vg
     def __init__(self):
-        self.Q = 1e-9*np.diag(1,1,1,1)
-        self.R = 
+        self.Q = 1e-9*np.diag(1,1,1,1,1,1,1)
+        self.R = np.diag(SENSOR.gps_n_sigma**2, SENSOR.gps_e_sigma**2, SENSOR.gps_Vg_sigma**2, SENSOR.gps_course_sigma**2, 0, 0)
         self.N = 2   # number of prediction step per sample
         self.Ts = (SIM.ts_control / self.N)
-        self.xhat = np.array([0,0,0,0]).T
+        self.xhat = np.array([0,0,0,0,0,0,0]).T
         self.P = np.diag(10,10,10,10)
         self.gps_n_old = 9999
         self.gps_e_old = 9999
@@ -169,19 +169,35 @@ class ekf_position:
 
     def f(self, x, state):
         # system dynamics for propagation model: xdot = f(x, u)
-        _f =
+        pn, pe, Vg, chi, wn, we, psi = x.item(0), x.item(1), x.item(2), x.item(3), x.item(4), x.item(5), x.item(6)
+        g = MAV.gravity
+        phi, q, r, theta, Va = state.phi, state.q, state.r, state.theta, state.Va
+        pn_dot = Vg*np.cos(chi)
+        pe_dot = Vg*np.sin(chi)
+        chi_dot = (g/Vg)*np.tan(phi)*np.cos(chi - psi)
+        wn_dot = 0
+        we_dot = 0
+        psi_dot = q*(np.sin(phi)/np.cos(theta)) + r*(np.cos(phi)/np.cos(theta))
+        Vg_dot = ((Va*np.cos(psi)+wn)*(-Va*psi_dot*np.sin(psi)) + (Va*np.sin(psi)+we)*Va*psi_dot*np.cos(psi))/Vg
+        _f = np.array([
+            pn_dot, pe_dot, Vg_dot, chi_dot, wn_dot, we_dot, psi_dot  
+        ]).T 
+
         return _f
-
-    def h_gps(self, x, state):
-        # measurement model for gps measurements
-        _h =np.array([
-
-        ])
-        return _h
 
     def h_pseudo(self, x, state):
         # measurement model for wind triangale pseudo measurement
-        _h =
+        pn, pe, Vg, chi, wn, we, psi = x.item(0), x.item(1), x.item(2), x.item(3), x.item(4), x.item(5), x.item(6)
+        g = MAV.gravity
+        phi, q, r, theta, Va = state.phi, state.q, state.r, state.theta, state.Va
+        _h = np.array([
+            pn, 
+            pe, 
+            Vg, 
+            chi, 
+            Va*np.cos(psi)+wn-Vg*np.cos(chi),
+            Va*np.cos(psi) + we - Vg*np.sin(chi)
+        ]).T
         return _h
 
     def propagate_model(self, state):

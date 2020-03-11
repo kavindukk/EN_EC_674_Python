@@ -145,11 +145,11 @@ class ekf_position:
     # implement continous-discrete EKF to estimate pn, pe, chi, Vg
     def __init__(self):
         self.Q = 1e-9*np.diag(1,1,1,1,1,1,1)
-        self.R = np.diag(SENSOR.gps_n_sigma**2, SENSOR.gps_e_sigma**2, SENSOR.gps_Vg_sigma**2, SENSOR.gps_course_sigma**2, 0, 0)
+        self.R = np.diag(SENSOR.gps_n_sigma**2, SENSOR.gps_e_sigma**2, SENSOR.gps_Vg_sigma**2, SENSOR.gps_course_sigma**2, 1.06**2, 1.06**2)
         self.N = 2   # number of prediction step per sample
         self.Ts = (SIM.ts_control / self.N)
         self.xhat = np.array([0,0,0,0,0,0,0]).T
-        self.P = np.diag(10,10,10,10)
+        self.P = np.diag(10,10,10,10,10,10,10)
         self.gps_n_old = 9999
         self.gps_e_old = 9999
         self.gps_Vg_old = 9999
@@ -204,26 +204,28 @@ class ekf_position:
         # model propagation
         for i in range(0, self.N):
             # propagate model
-            self.xhat =
+            self.xhat = self.xhat + self.Ts*self.f(self.xhat,state)
             # compute Jacobian
             A = jacobian(self.f, self.xhat, state)
             # update P with continuous time model
             # self.P = self.P + self.Ts * (A @ self.P + self.P @ A.T + self.Q + G @ self.Q_gyro @ G.T)
             # convert to discrete time models
-            A_d =
+            A_d = np.eye(7) + A @ self.Ts + A @ A * self.Ts**2
             # update P with discrete time model
-            self.P =
+            self.P = A_d @ P @ A_d.T + self.Ts**2*self.Q 
 
     def measurement_update(self, state, measurement):
         # always update based on wind triangle pseudu measurement
         h = self.h_pseudo(self.xhat, state)
         C = jacobian(self.h_pseudo, self.xhat, state)
-        y = np.array([0, 0])
-        for i in range(0, 2):
-            Ci = 
-            L = 
-            self.P =
-            self.xhat =
+        y = np.array([measurement.gps_n, measurement.gps_e,measurement.gps_Vg, measurement.gps_course])
+        # for i in range(0, 2):
+            # Ci = 
+        S_inv = np.linalg.inv(self.R + C @ self.P @ C.T)
+        L = self.P @ C.T @ S_inv
+        I_LC = np.eye(7) - L @ C
+        self.P = I_LC @ self.P @ I_LC.T + L @ self.R @ L.T
+        self.xhat = 
 
         # only update GPS when one of the signals changes
         if (measurement.gps_n != self.gps_n_old) \
@@ -233,8 +235,8 @@ class ekf_position:
 
             h = self.h_gps(self.xhat, state)
             C = jacobian(self.h_gps, self.xhat, state)
-            y = np.array([measurement.gps_n, measurement.gps_e, measurement.gps_Vg, measurement.gps_course])
-            for i in range(0, 4):
+            y = np.array([measurement.gps_n, measurement.gps_e, measurement.gps_Vg, measurement.gps_course, 0, 0]).T
+            # for i in range(0, 4):
                 Ci = 
                 L = 
                 self.P =

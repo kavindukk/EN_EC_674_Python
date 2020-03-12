@@ -145,7 +145,8 @@ class ekf_position:
     # implement continous-discrete EKF to estimate pn, pe, chi, Vg
     def __init__(self):
         self.Q = 1e-9*np.diag(1,1,1,1,1,1,1)
-        self.R = np.diag(SENSOR.gps_n_sigma**2, SENSOR.gps_e_sigma**2, SENSOR.gps_Vg_sigma**2, SENSOR.gps_course_sigma**2, 1.06**2, 1.06**2)
+        self.R_gps = np.diag(SENSOR.gps_n_sigma**2, SENSOR.gps_e_sigma**2, SENSOR.gps_Vg_sigma**2, SENSOR.gps_course_sigma**2)
+        self.R_psudo = np.diag(0.01**2, 0.01**2)
         self.N = 2   # number of prediction step per sample
         self.Ts = (SIM.ts_control / self.N)
         self.xhat = np.array([0,0,0,0,0,0,0]).T
@@ -169,7 +170,7 @@ class ekf_position:
 
     def f(self, x, state):
         # system dynamics for propagation model: xdot = f(x, u)
-        pn, pe, Vg, chi, wn, we, psi = x.item(0), x.item(1), x.item(2), x.item(3), x.item(4), x.item(5), x.item(6)
+        Vg, chi, wn, we, psi = x.item(2), x.item(3), x.item(4), x.item(5), x.item(6)
         g = MAV.gravity
         phi, q, r, theta, Va = state.phi, state.q, state.r, state.theta, state.Va
         pn_dot = Vg*np.cos(chi)
@@ -185,16 +186,23 @@ class ekf_position:
 
         return _f
 
+    def h_gps(self, x, state):
+        # measurement model for gps measurements
+        pn, pe, Vg, chi = x.item(0), x.item(1), x.item(2), x.item(3)    
+        _h =np.array([
+            pn,
+            pe,
+            Vg,
+            chi,
+        ]).T 
+        return _h
+
+
     def h_pseudo(self, x, state):
         # measurement model for wind triangale pseudo measurement
-        pn, pe, Vg, chi, wn, we, psi = x.item(0), x.item(1), x.item(2), x.item(3), x.item(4), x.item(5), x.item(6)
-        g = MAV.gravity
-        phi, q, r, theta, Va = state.phi, state.q, state.r, state.theta, state.Va
-        _h = np.array([
-            pn, 
-            pe, 
-            Vg, 
-            chi, 
+        Vg, chi, wn, we, psi = x.item(2), x.item(3), x.item(4), x.item(5), x.item(6)        
+        Va = state.Va
+        _h = np.array([            
             Va*np.cos(psi)+wn-Vg*np.cos(chi),
             Va*np.cos(psi) + we - Vg*np.sin(chi)
         ]).T
@@ -218,14 +226,14 @@ class ekf_position:
         # always update based on wind triangle pseudu measurement
         h = self.h_pseudo(self.xhat, state)
         C = jacobian(self.h_pseudo, self.xhat, state)
-        y = np.array([measurement.gps_n, measurement.gps_e,measurement.gps_Vg, measurement.gps_course])
+        y = np.array([0, 0]).T 
         # for i in range(0, 2):
             # Ci = 
-        S_inv = np.linalg.inv(self.R + C @ self.P @ C.T)
+        S_inv = np.linalg.inv(self.R_psudo + C @ self.P @ C.T)
         L = self.P @ C.T @ S_inv
         I_LC = np.eye(7) - L @ C
         self.P = I_LC @ self.P @ I_LC.T + L @ self.R @ L.T
-        self.xhat = 
+        self.xhat = self.xhat + L @ (y - h)
 
         # only update GPS when one of the signals changes
         if (measurement.gps_n != self.gps_n_old) \
@@ -235,12 +243,13 @@ class ekf_position:
 
             h = self.h_gps(self.xhat, state)
             C = jacobian(self.h_gps, self.xhat, state)
-            y = np.array([measurement.gps_n, measurement.gps_e, measurement.gps_Vg, measurement.gps_course, 0, 0]).T
+            y = np.array([measurement.gps_n, measurement.gps_e, measurement.gps_Vg, measurement.gps_course]).T
             # for i in range(0, 4):
-                Ci = 
-                L = 
-                self.P =
-                self.xhat =
+                # Ci = 
+            L = self.P @ C.T @ S_inv
+            I_LC = np.eye(7) - L @ C
+            self.P = self.P = I_LC @ self.P @ I_LC.T + L @ self.R_gps @ L.T
+            self.xhat = self.xhat = self.xhat + L @ (y - h)
             # update stored GPS signals
             self.gps_n_old = measurement.gps_n
             self.gps_e_old = measurement.gps_e

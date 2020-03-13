@@ -38,9 +38,9 @@ class observer:
     def update(self, measurements):
 
         # estimates for p, q, r are low pass filter of gyro minus bias estimate
-        self.estimated_state.p = self.lpf_gyro_x.update(measurements.gyro_x)
-        self.estimated_state.q = self.lpf_gyro_y.update(measurements.gyro_y)
-        self.estimated_state.r = self.lpf_gyro_z.update(measurements.gyro_z)
+        self.estimated_state.p = self.lpf_gyro_x.update(measurements.gyro_x) - SENSOR.gyro_x_bias
+        self.estimated_state.q = self.lpf_gyro_y.update(measurements.gyro_y) - SENSOR.gyro_y_bias
+        self.estimated_state.r = self.lpf_gyro_z.update(measurements.gyro_z) - SENSOR.gyro_z_bias
 
         # invert sensor model to get altitude and airspeed
         self.estimated_state.h = self.lpf_static.update(measurements.static_pressure)/MAV.rho/MAV.gravity
@@ -74,10 +74,10 @@ class alpha_filter:
 class ekf_attitude:
     # implement continous-discrete EKF to estimate roll and pitch angles
     def __init__(self):
-        self.Q = 1e-6*np.diag([1,1])
+        self.Q = 1e-1*np.diag([1,1])
         self.Q_gyro = SENSOR.gyro_sigma**2*np.diag([1,1,1])
         self.R_accel = SENSOR.accel_sigma**2*np.diag([1,1,1])
-        self.N = 10  # number of prediction step per sample
+        self.N = 5  # number of prediction step per sample
         self.xhat =  np.array([0,0]).T # initial state: phi, theta
         self.P = np.diag([1,1])*.1
         self.Ts = SIM.ts_control/self.N
@@ -145,10 +145,10 @@ class ekf_attitude:
 class ekf_position:
     # implement continous-discrete EKF to estimate pn, pe, chi, Vg
     def __init__(self):
-        self.Q = 1e-2*np.diag([1,1,1,1,1,1,1])
+        self.Q = 3*np.diag([1,1,1,1,1,1,1])
         self.R_gps = np.diag([SENSOR.gps_n_sigma**2, SENSOR.gps_e_sigma**2, SENSOR.gps_Vg_sigma**2, SENSOR.gps_course_sigma**2])
         self.R_psudo = np.diag([0.01, 0.01])
-        self.N = 25  # number of prediction step per sample
+        self.N = 5  # number of prediction step per sample
         self.Ts = (SIM.ts_control / self.N)
         self.xhat = np.array([0,0,25,0,0,0,0]).T # pn, pe, Vg, chi, wn, we, psi
         self.P = 0.5*np.diag([1,1,1,1,1,1,1])

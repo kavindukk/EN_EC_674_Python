@@ -74,12 +74,12 @@ class alpha_filter:
 class ekf_attitude:
     # implement continous-discrete EKF to estimate roll and pitch angles
     def __init__(self):
-        self.Q = 1e-9*np.diag(1,1)
-        self.Q_gyro = SENSOR.gyro_sigma**2*np.diag(1,1,1)
-        self.R_accel = SENSOR.accel_sigma**2*np.diag(1,1,1)
+        self.Q = 1e-9*np.diag([1,1])
+        self.Q_gyro = SENSOR.gyro_sigma**2*np.diag([1,1,1])
+        self.R_accel = SENSOR.accel_sigma**2*np.diag([1,1,1])
         self.N = 2  # number of prediction step per sample
         self.xhat =  np.array([0,0]).T # initial state: phi, theta
-        self.P = np.diag(10,10)
+        self.P = np.diag([10,10])
         self.Ts = SIM.ts_control/self.N
 
     def update(self, state, measurement):
@@ -90,7 +90,7 @@ class ekf_attitude:
 
     def f(self, x, state):  
         # system dynamics for propagation model: xdot = f(x, u)
-        p,q,r,phi,theta = state.p,state.q, state.r, x.phi, x.theta
+        p,q,r,phi,theta = state.p,state.q, state.r, x.item(0), x.item(1)
 
         _f = np.array([ p+q*np.sin(phi)*np.tan(theta)+r*np.cos(phi)*np.tan(theta),
                         q*np.cos(phi)-r*np.sin(phi) ]).T
@@ -99,7 +99,7 @@ class ekf_attitude:
     def h(self, x, state):
         # measurement model y
         g = MAV.gravity
-        p, q, r, phi, theta, Va= state.p, state.q, state.r, x.phi, x.theta, state.Va
+        p, q, r, phi, theta, Va= state.p, state.q, state.r, x.item(0), x.item(1), state.Va
         _h = np.array([
                     q*Va*np.sin(theta) + MAV.gravity*np.sin(theta),
                     r*Va*np.cos(theta) - p*Va*np.sin(theta) - g*np.cos(theta)*np.sin(phi),
@@ -116,8 +116,8 @@ class ekf_attitude:
             A = jacobian(self.f, self.xhat, state)
             # compute G matrix for gyro noise
             theta,phi = state.theta,state.phi
-            G = np.array([ [1, np.sin(phi)*np.tan(theta), np.cos(phi)*np.tan(theta), 0],
-                            [0, np.cos(phi), -np.sin(phi), 0]  ])
+            G = np.array([ [1, np.sin(phi)*np.tan(theta), np.cos(phi)*np.tan(theta)],
+                            [0, np.cos(phi), -np.sin(phi)] ])
             # update P with continuous time model
             # self.P = self.P + self.Ts * (A @ self.P + self.P @ A.T + self.Q + G @ self.Q_gyro @ G.T)
             # convert to discrete time models
@@ -144,13 +144,13 @@ class ekf_attitude:
 class ekf_position:
     # implement continous-discrete EKF to estimate pn, pe, chi, Vg
     def __init__(self):
-        self.Q = 1e-9*np.diag(1,1,1,1,1,1,1)
-        self.R_gps = np.diag(SENSOR.gps_n_sigma**2, SENSOR.gps_e_sigma**2, SENSOR.gps_Vg_sigma**2, SENSOR.gps_course_sigma**2)
-        self.R_psudo = np.diag(0.01**2, 0.01**2)
+        self.Q = 1e-9*np.diag([1,1,1,1,1,1,1])
+        self.R_gps = np.diag([SENSOR.gps_n_sigma**2, SENSOR.gps_e_sigma**2, SENSOR.gps_Vg_sigma**2, SENSOR.gps_course_sigma**2])
+        self.R_psudo = np.diag([0.01**2, 0.01**2])
         self.N = 2   # number of prediction step per sample
         self.Ts = (SIM.ts_control / self.N)
         self.xhat = np.array([0,0,0,0,0,0,0]).T
-        self.P = np.diag(10,10,10,10,10,10,10)
+        self.P = np.diag([10,10,10,10,10,10,10])
         self.gps_n_old = 9999
         self.gps_e_old = 9999
         self.gps_Vg_old = 9999
@@ -265,8 +265,10 @@ def jacobian(fun, x, state):
     J = np.zeros((m, n))
     for i in range(0, n):
         x_eps = np.copy(x)
-        x_eps[i][0] += eps
+        # x_eps[i][0] += eps
+        x_eps[i] += eps
         f_eps = fun(x_eps, state)
         df = (f_eps - f) / eps
-        J[:, i] = df[:, 0]
+        # J[:, i] = df[:, 0]
+        J[:, i] = df
     return J

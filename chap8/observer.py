@@ -74,12 +74,12 @@ class alpha_filter:
 class ekf_attitude:
     # implement continous-discrete EKF to estimate roll and pitch angles
     def __init__(self):
-        self.Q = 1e-1*np.diag([1,1])
+        self.Q = np.diag([1,1])
         self.Q_gyro = SENSOR.gyro_sigma**2*np.diag([1,1,1])
         self.R_accel = SENSOR.accel_sigma**2*np.diag([1,1,1])
         self.N = 5  # number of prediction step per sample
-        self.xhat =  np.array([0,0]).T # initial state: phi, theta
-        self.P = np.diag([1,1])*.1
+        self.xhat =  np.zeros(2) # initial state: phi, theta
+        self.P = np.eye(2)
         self.Ts = SIM.ts_control/self.N
 
     def update(self, state, measurement):
@@ -93,7 +93,7 @@ class ekf_attitude:
         p,q,r,phi,theta = state.p,state.q, state.r, x.item(0), x.item(1)
 
         _f = np.array([ p+q*np.sin(phi)*np.tan(theta)+r*np.cos(phi)*np.tan(theta),
-                        q*np.cos(phi)-r*np.sin(phi) ]).T
+                        q*np.cos(phi)-r*np.sin(phi) ])
         return _f
 
     def h(self, x, state):
@@ -104,7 +104,7 @@ class ekf_attitude:
                     q*Va*np.sin(theta) + MAV.gravity*np.sin(theta),
                     r*Va*np.cos(theta) - p*Va*np.sin(theta) - g*np.cos(theta)*np.sin(phi),
                     -q*Va*np.cos(theta) - g*np.cos(theta)*np.cos(phi)
-        ]).T 
+        ])
         return _h
 
     def propagate_model(self, state):
@@ -117,12 +117,12 @@ class ekf_attitude:
             # compute G matrix for gyro noise
             # theta,phi = state.theta,state.phi
             theta, phi = self.xhat[1], self.xhat[0]
-            G = np.array([ [1, np.sin(phi)*np.tan(theta), np.cos(phi)*np.tan(theta)],
-                            [0, np.cos(phi), -np.sin(phi)] ])
+            G = np.array([[1, np.sin(phi)*np.tan(theta), np.cos(phi)*np.tan(theta)],
+                            [0, np.cos(phi), -np.sin(phi)]])
             # update P with continuous time model
             # self.P = self.P + self.Ts * (A @ self.P + self.P @ A.T + self.Q + G @ self.Q_gyro @ G.T)
             # convert to discrete time models
-            A_d = np.eye(2) + A*self.Ts + (self.Ts**2)/2*(A@A)
+            A_d = np.eye(2) + A*self.Ts + (A@A)*(self.Ts**2)/2
             # G_d = 
             # update P with discrete time model
             self.P = A_d @ self.P @ A_d.T + (self.Q + G @ self.Q_gyro @ G.T)*self.Ts**2 
@@ -132,26 +132,26 @@ class ekf_attitude:
         threshold = 2.0
         h = self.h(self.xhat, state)
         C = jacobian(self.h, self.xhat, state)
-        y = np.array([measurement.accel_x, measurement.accel_y, measurement.accel_z]).T
+        y = np.array([measurement.accel_x, measurement.accel_y, measurement.accel_z])
         S_inv = np.linalg.inv(self.R_accel+ C @ self.P @ C.T)
         # for i in range(0, 3):
-        if np.abs(y[0]-h[0]) or np.abs(y[1]-h[1]) or np.abs(y[2]-h[2]) < threshold:
+        # if np.abs(y[0]-h[0]) or np.abs(y[1]-h[1]) or np.abs(y[2]-h[2]) < threshold:
             # Ci = 
-            L = self.P @ C.T @ S_inv
-            I_LC = np.eye(2)-L @ C
-            self.P = I_LC @ self.P @ I_LC.T + L @ self.R_accel @ L.T
-            self.xhat = self.xhat + L @ (y-h)
+        L = self.P @ C.T @ S_inv
+        I_LC = np.eye(2)-L @ C
+        self.P = I_LC @ self.P @ I_LC.T + L @ self.R_accel @ L.T
+        self.xhat = self.xhat + L @ (y-h)
 
 class ekf_position:
     # implement continous-discrete EKF to estimate pn, pe, chi, Vg
     def __init__(self):
-        self.Q = 3*np.diag([1,1,1,1,1,1,1])
+        self.Q = np.eye(7)
         self.R_gps = np.diag([SENSOR.gps_n_sigma**2, SENSOR.gps_e_sigma**2, SENSOR.gps_Vg_sigma**2, SENSOR.gps_course_sigma**2])
-        self.R_psudo = np.diag([0.01, 0.01])
-        self.N = 5  # number of prediction step per sample
+        self.R_psudo = np.eye(2)*0.01
+        self.N = 25  # number of prediction step per sample
         self.Ts = (SIM.ts_control / self.N)
-        self.xhat = np.array([0,0,25,0,0,0,0]).T # pn, pe, Vg, chi, wn, we, psi
-        self.P = 0.5*np.diag([1,1,1,1,1,1,1])
+        self.xhat = np.array([0,0,25,0,0,0,0]) # pn, pe, Vg, chi, wn, we, psi
+        self.P = np.eye(7)
         self.gps_n_old = 9999
         self.gps_e_old = 9999
         self.gps_Vg_old = 9999
@@ -183,7 +183,7 @@ class ekf_position:
         Vg_dot = ((Va*np.cos(psi)+wn)*(-Va*psi_dot*np.sin(psi)) + (Va*np.sin(psi)+we)*Va*psi_dot*np.cos(psi))/Vg
         _f = np.array([
             pn_dot, pe_dot, Vg_dot, chi_dot, wn_dot, we_dot, psi_dot  
-        ]).T 
+        ])
 
         return _f
 
@@ -195,7 +195,7 @@ class ekf_position:
             pe,
             Vg,
             chi,
-        ]).T 
+        ])
         return _h
 
 
@@ -206,7 +206,7 @@ class ekf_position:
         _h = np.array([            
             Va*np.cos(psi)+wn-Vg*np.cos(chi),
             Va*np.sin(psi) + we - Vg*np.sin(chi)
-        ]).T
+        ])
         return _h
 
     def propagate_model(self, state):
@@ -219,7 +219,7 @@ class ekf_position:
             # update P with continuous time model
             # self.P = self.P + self.Ts * (A @ self.P + self.P @ A.T + self.Q + G @ self.Q_gyro @ G.T)
             # convert to discrete time models
-            A_d = np.eye(7) + A * self.Ts + (A @ A) * self.Ts**2
+            A_d = np.eye(7) + A * self.Ts + (A @ A) * (self.Ts**2)/2
             # update P with discrete time model
             self.P = A_d @ self.P @ A_d.T + self.Ts**2*self.Q 
 
@@ -227,7 +227,7 @@ class ekf_position:
         # always update based on wind triangle pseudu measurement
         h_pseudo = self.h_pseudo(self.xhat, state)
         C = jacobian(self.h_pseudo, self.xhat, state)
-        y = np.array([0, 0]).T 
+        y = np.array([0, 0])
         # for i in range(0, 2):
             # Ci = 
         S_inv = np.linalg.inv(self.R_psudo + C @ self.P @ C.T)
@@ -244,7 +244,7 @@ class ekf_position:
 
             h_gps = self.h_gps(self.xhat, state)
             C = jacobian(self.h_gps, self.xhat, state)
-            y = np.array([measurement.gps_n, measurement.gps_e, measurement.gps_Vg, measurement.gps_course]).T
+            y = np.array([measurement.gps_n, measurement.gps_e, measurement.gps_Vg, measurement.gps_course])
             # for i in range(0, 4):
                 # Ci = 
             S_inv = np.linalg.inv(self.R_gps + C @ self.P @ C.T)

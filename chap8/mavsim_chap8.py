@@ -14,7 +14,7 @@ from chap2.spacecraft_viewer import spacecraft_viewer as mavViewer
 from chap3.data_viewer import data_viewer as dataViewer
 from chap4.wind_simulation import wind_simulation as windSimulation
 from chap6.autopilot import autopilot
-from chap7.mav_dynamics import mav_dynamics as mavDynamics
+from chap7.mav_dynamics import mav_dynamics 
 from chap8.observer import observer
 #from chap8.observer_full import observer
 #from chap8.observer2 import observer
@@ -32,7 +32,7 @@ if VIDEO is True:
 
 # initialize elements of the architecture
 wind = windSimulation(SIM.ts_simulation)
-mav = mavDynamics(SIM.ts_simulation)
+mav = mav_dynamics(SIM.ts_simulation)
 ctrl = autopilot(SIM.ts_simulation)
 obsv = observer(SIM.ts_simulation)
 
@@ -65,14 +65,16 @@ while sim_time < SIM.end_time:
     commands.altitude_command = h_command.square(sim_time)
 
     # -------controller-------------
-    measurements = mav.sensors  # get sensor measurements
+    measurements = mav.sensors  # get sensor measurements    
     estimated_state = obsv.update(measurements)  # estimate states from measurements
+    # estimated_state = mav.msg_true_state # uses true states in the control
     delta, commanded_state = ctrl.update(commands, estimated_state)
 
     # -------physical system-------------
     current_wind = np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]).T
     # current_wind = wind.update()  # get the new wind vector
     mav.update_state(delta, current_wind)  # propagate the MAV dynamics
+    mav.update_sensors()  # update the sensors
 
     # -------update viewer-------------
     mav_view.update(mav.msg_true_state)  # plot body of MAV

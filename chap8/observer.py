@@ -92,19 +92,19 @@ class ekf_attitude:
         # system dynamics for propagation model: xdot = f(x, u)
         p,q,r,phi,theta = state.p,state.q, state.r, x.item(0), x.item(1)
 
-        _f = np.array([ p+q*np.sin(phi)*np.tan(theta)+r*np.cos(phi)*np.tan(theta),
-                        q*np.cos(phi)-r*np.sin(phi) ])
+        _f = np.array([[ p+q*np.sin(phi)*np.tan(theta)+r*np.cos(phi)*np.tan(theta),
+                        q*np.cos(phi)-r*np.sin(phi) ]]).T
         return _f
 
     def h(self, x, state):
         # measurement model y
         g = MAV.gravity
         p, q, r, phi, theta, Va= state.p, state.q, state.r, x.item(0), x.item(1), state.Va
-        _h = np.array([
+        _h = np.array([[
                     q*Va*np.sin(theta) + MAV.gravity*np.sin(theta),
                     r*Va*np.cos(theta) - p*Va*np.sin(theta) - g*np.cos(theta)*np.sin(phi),
                     -q*Va*np.cos(theta) - g*np.cos(theta)*np.cos(phi)
-        ])
+        ]]).T
         return _h
 
     def propagate_model(self, state):
@@ -181,21 +181,21 @@ class ekf_position:
         we_dot = 0
         psi_dot = q*(np.sin(phi)/np.cos(theta)) + r*(np.cos(phi)/np.cos(theta))
         Vg_dot = ((Va*np.cos(psi)+wn)*(-Va*psi_dot*np.sin(psi)) + (Va*np.sin(psi)+we)*Va*psi_dot*np.cos(psi))/Vg
-        _f = np.array([
+        _f = np.array([[
             pn_dot, pe_dot, Vg_dot, chi_dot, wn_dot, we_dot, psi_dot  
-        ])
+        ]]).T
 
         return _f
 
     def h_gps(self, x, state):
         # measurement model for gps measurements
         pn, pe, Vg, chi = x.item(0), x.item(1), x.item(2), x.item(3)    
-        _h =np.array([
+        _h =np.array([[
             pn,
             pe,
             Vg,
             chi,
-        ])
+        ]]).T
         return _h
 
 
@@ -203,10 +203,10 @@ class ekf_position:
         # measurement model for wind triangale pseudo measurement
         Vg, chi, wn, we, psi = x.item(2), x.item(3), x.item(4), x.item(5), x.item(6)        
         Va = state.Va
-        _h = np.array([            
+        _h = np.array([[            
             Va*np.cos(psi)+wn-Vg*np.cos(chi),
             Va*np.sin(psi) + we - Vg*np.sin(chi)
-        ])
+        ]]).T
         return _h
 
     def propagate_model(self, state):
@@ -251,7 +251,7 @@ class ekf_position:
             L = self.P @ C.T @ S_inv
             I_LC = np.eye(7) - L @ C
             self.P = I_LC @ self.P @ I_LC.T + L @ self.R_gps @ L.T
-            y[3] = wrap(y[3], h_gps[3])
+            y[3] = wrap(y[3], self.h_gps[3])
             self.xhat = self.xhat + L @ (y - h_gps)
             # update stored GPS signals
             self.gps_n_old = measurement.gps_n
@@ -272,6 +272,6 @@ def jacobian(fun, x, state):
         x_eps[i] += eps
         f_eps = fun(x_eps, state)
         df = (f_eps - f) / eps
-        # J[:, i] = df[:, 0]
-        J[:, i] = df
+        J[:, i] = df[:, 0]
+        # J[:, i] = df
     return J

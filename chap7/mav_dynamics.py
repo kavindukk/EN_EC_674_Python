@@ -102,7 +102,7 @@ class mav_dynamics:
 
 
 
-    def update_sensors(self,delta):
+    def update_sensors(self):
         "Return value of sensors on MAV: gyros, accels, static_pressure, dynamic_pressure, GPS"
         # Rate Gyros
         p = self._state.item(10)
@@ -113,7 +113,8 @@ class mav_dynamics:
         self.sensors.gyro_z = r + np.random.normal(scale=SENSOR.gyro_sigma) + SENSOR.gyro_z_bias
 
         # Accelerometers
-        forces = self._forces_moments(delta)
+        # forces = self._forces_moments(delta)
+        forces = self._forces
         phi, theta, psi = Quaternion2Euler([self._state.item(6), self._state.item(7), self._state.item(8), self._state.item(9)])
         m, g =MAV.mass, MAV.gravity
         self.sensors.accel_x = forces.item(0)/m + g*np.sin(theta) +  np.random.normal(scale=SENSOR.accel_sigma)

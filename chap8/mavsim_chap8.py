@@ -73,6 +73,7 @@ while sim_time < SIM.end_time:
     current_wind = np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]).T
     # current_wind = wind.update()  # get the new wind vector
     mav.update_state(delta, current_wind)  # propagate the MAV dynamics
+    mav.update_sensors(delta) 
 
     # -------update viewer-------------
     mav_view.update(mav.msg_true_state)  # plot body of MAV

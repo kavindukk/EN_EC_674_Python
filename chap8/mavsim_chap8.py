@@ -68,7 +68,7 @@ while sim_time < SIM.end_time:
     measurements = mav.sensors  # get sensor measurements
     estimated_state = obsv.update(measurements)  # estimate states from measurements
     delta, commanded_state = ctrl.update(commands, estimated_state)
-
+    delta[1] = delta[1]*1.2
     # -------physical system-------------
     current_wind = np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]).T
     # current_wind = wind.update()  # get the new wind vector

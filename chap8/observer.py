@@ -77,7 +77,7 @@ class ekf_attitude:
         self.Q = 1e-9*np.eye(2)
         self.Q_gyro = SENSOR.gyro_sigma**2*np.eye(3)
         self.R_accel = SENSOR.accel_sigma**2*np.eye(3)
-        self.N = 5  # number of prediction step per sample
+        self.N = 10  # number of prediction step per sample
         self.xhat =  np.array([0,0]).T # initial state: phi, theta
         self.P = np.eye(2)*0.1
         self.Ts = SIM.ts_control/self.N
@@ -135,20 +135,20 @@ class ekf_attitude:
         y = np.array([measurement.accel_x, measurement.accel_y, measurement.accel_z]).T
         S_inv = np.linalg.inv(self.R_accel+ C @ self.P @ C.T)
         # for i in range(0, 3):
-        if np.abs(y[0]-h[0]) or np.abs(y[1]-h[1]) or np.abs(y[2]-h[2]) < threshold:
+        # if np.abs(y[0]-h[0]) or np.abs(y[1]-h[1]) or np.abs(y[2]-h[2]) < threshold:
             # Ci = 
-            L = self.P @ C.T @ S_inv
-            I_LC = np.eye(2)-L @ C
-            self.P = I_LC @ self.P @ I_LC.T + L @ self.R_accel @ L.T
-            self.xhat = self.xhat + L @ (y-h)
+        L = self.P @ C.T @ S_inv
+        I_LC = np.eye(2)-L @ C
+        self.P = I_LC @ self.P @ I_LC.T + L @ self.R_accel @ L.T
+        self.xhat = self.xhat + L @ (y-h)
 
 class ekf_position:
     # implement continous-discrete EKF to estimate pn, pe, chi, Vg
     def __init__(self):
-        self.Q = 3*np.eye(7)
+        self.Q = .6*np.eye(7)
         self.R_gps = np.diag([SENSOR.gps_n_sigma**2, SENSOR.gps_e_sigma**2, SENSOR.gps_Vg_sigma**2, SENSOR.gps_course_sigma**2])
         self.R_psudo = np.eye(2)*0.01
-        self.N = 5  # number of prediction step per sample
+        self.N = 25  # number of prediction step per sample
         self.Ts = (SIM.ts_control / self.N)
         self.xhat = np.array([0,0,25,0,0,0,0]).T # pn, pe, Vg, chi, wn, we, psi
         self.P = 0.1*np.eye(7)

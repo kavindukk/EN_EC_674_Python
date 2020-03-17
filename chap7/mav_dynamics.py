@@ -214,9 +214,9 @@ class mav_dynamics:
         v_w = Web+wind.item(4)
         w_w = Wdb+wind.item(5) 
 
-        u_r = u - u_w
-        v_r = v - v_w
-        w_r = w - w_w
+        u_r = u #- u_w
+        v_r = v #- v_w
+        w_r = w #- w_w
 
         self._Va = math.sqrt(u_r**2 + v_r**2 + w_r**2)
         

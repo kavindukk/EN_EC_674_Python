@@ -34,7 +34,7 @@ class path_follower:
         ])
         e_p = R @ (p - r)
         #Altitude command        
-        ep_i = np.array([state.pn, state.pe, -state.h]) - np.array([r[0][1],r[1][0], r[2][0]])
+        ep_i = np.array([state.pn, state.pe, -state.h]) - np.array([r[0][0],r[1][0], r[2][0]])
         cross = np.cross([q[0][0],q[1][0],q[2][0]], [0,0,1])
         n = cross/np.linalg.norm(cross)
         s = ep_i - np.dot(ep_i,n)*n
@@ -45,27 +45,22 @@ class path_follower:
         self.autopilot_commands.altitude_command = -r[2][0] - np.sqrt(s[0]**2+s[1]**2)*q[2][0]/np.sqrt(q[0][0]**2+q[1][0]**2)
         self.autopilot_commands.phi_feedforward = 0
 
-    def _follow_orbit(self, path, state):
-        c = path.orbit_center
-        d = np.sqrt((state.pn-c[0][0])**2 + (state.pe-c[1][0])**2)
+    def _follow_orbit(self, path, state):    
+        c = path.orbit_center        
         rho = path.orbit_radius
-        if path.orbit_direction =='CW':
-            l= 1
+        if path.orbit_direction == 'CW':
+            l = 1
         else:
-            l=-1
-        psi = np.arctan2(state.pe-c[1][0], state.pn-c[0][0])
-        psi = self._wrap(psi, state.chi)
-
-        Vg = state.Vg
-        chi = state.chi
-        psi = state.psi
-        phi_feedfw = atan(Vg**2 / ( self.gravity * rho * cos( chi - psi ) ))
-
-        chi_c = psi + l*(np.pi/2  +  np.arctan(self.k_orbit)*(d-rho)/rho)
+            l = -1
+        g = 9.81  
+        d = np.sqrt((state.pn-c[0][0])**2+(state.pe-c[1][0])**2)
+        var_phi = self._wrap(atan2(state.pe-c[1][0], state.pn-c[0][0]), state.chi)
+        orbit_phi = l*atan2(state.Va**2, g*rho)      
+        chi_c = var_phi + l*(np.pi/2.0 + atan(self.k_orbit*(d-rho)/rho))          
         self.autopilot_commands.airspeed_command = path.airspeed
         self.autopilot_commands.course_command = chi_c
         self.autopilot_commands.altitude_command = -path.orbit_center[2][0]
-        self.autopilot_commands.phi_feedforward = phi_feedfw
+        self.autopilot_commands.phi_feedforward = orbit_phi
 
     def _wrap(self, chi_c, chi):
         while chi_c-chi > np.pi:

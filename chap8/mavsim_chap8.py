@@ -12,9 +12,9 @@ import parameters.simulation_parameters as SIM
 
 from chap2.spacecraft_viewer import spacecraft_viewer as mavViewer
 from chap3.data_viewer import data_viewer as dataViewer
-from chap4.wind_simulation import wind_simulation as windSimulation
-from chap6.autopilot import autopilot
-from chap7.mav_dynamics import mav_dynamics as mavDynamics
+from chap4.wind_simulations2 import wind_simulation as windSimulation
+from chap6.autopilot2 import autopilot
+from chap7.mav_dynamics2 import mav_dynamics as mavDynamics
 # from chap8.observer import observer
 #from chap8.observer_full import observer
 from chap8.observer_2 import observer

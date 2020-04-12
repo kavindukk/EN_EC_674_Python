@@ -13,7 +13,7 @@ from chap2.spacecraft_viewer import spacecraft_viewer as mav_viewer
 from chap3.data_viewer import data_viewer
 from chap4.wind_simulation import wind_simulation
 from chap6.autopilot import autopilot
-from chap7.mav_dynamics import mav_dynamics
+from chap7.mav_dynamics2 import mav_dynamics
 from chap7.sensor_viewer import sensor_viewer
 from tools.signals import signals
 
@@ -53,7 +53,7 @@ while sim_time < SIM.end_time:
     commands.altitude_command = h_command.square(sim_time)
 
     #-------controller-------------
-    measurements = mav.sensors  # get sensor measurements
+    measurements = mav._sensors  # get sensor measurements
     estimated_state = mav.msg_true_state # uses true states in the control
     delta, commanded_state = ctrl.update(commands, estimated_state)
 
